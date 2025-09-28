@@ -1,0 +1,1 @@
+/home/uday/projects/Aegis-Private-Solana-AiAgent/target/release/libonchain_program.rlib: /home/uday/projects/Aegis-Private-Solana-AiAgent/onchain-program/programs/onchain-program/src/lib.rs /home/uday/projects/Aegis-Private-Solana-AiAgent/shared/src/lib.rs

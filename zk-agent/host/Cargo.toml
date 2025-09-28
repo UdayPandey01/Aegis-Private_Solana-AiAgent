@@ -1,0 +1,18 @@
+[package]
+name = "host"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+methods = { path = "../methods" }
+shared = { path = "../../shared" }
+risc0-zkvm = { version = "3.0.3", default-features = false, features = ["prove"]}
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anchor-client = { version = "0.31.1", features = ["async"]}
+tokio = { version = "1.42.0", features = ["macros"] }
+tracing = "0.1.41"
+borsh = { version = "0.10.3" }
+
+
+[patch.crates-io]
+curve25519-dalek = { git = "https://github.com/ivs/curve25519-dalek", branch = "rustls-dep-hell" }
