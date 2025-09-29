@@ -1,7 +1,7 @@
-# filename: ~/projects/Aegis-Private-Solana-AiAgent/Cargo.toml
 [workspace]
 resolver = "2"
 members = [
-    "onchain-program",
+    "onchain-program/programs/onchain-program",
     "shared",
 ]
+

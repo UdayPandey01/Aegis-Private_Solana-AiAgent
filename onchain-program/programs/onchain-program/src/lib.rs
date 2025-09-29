@@ -8,7 +8,7 @@ pub mod onchain_program {
 
     pub fn create_job(ctx : Context<CreateJob>, job_id : u64) -> Result<()> {
         let job = &mut ctx.accounts.job;
-        let authority = *ctx.accounts.authority.key;
+        job.authority = *ctx.accounts.authority.key;
         job.job_id = job_id;
         job.status = JobStatus::Pending;
         msg!("Job #{} created for authority {}", job_id, job.authority);
@@ -26,7 +26,7 @@ pub mod onchain_program {
 
 #[derive(Accounts)]
 #[instruction(job_id: u64)]
-pub struct CreateJob<'Info> {
+pub struct CreateJob<'info> {
     #[account (
         init,
         payer = authority,
@@ -34,7 +34,7 @@ pub struct CreateJob<'Info> {
         seeds = [b"job", authority.key().as_ref(), &job_id.to_le_bytes()],
         bump
     )]
-    pub job : Account<'info, job>,
+    pub job : Account<'info, Job>,
     #[account(mut)]
     pub authority : Signer<'info>,
     pub system_program : Program<'info, System>
@@ -42,13 +42,13 @@ pub struct CreateJob<'Info> {
 
 #[derive(Accounts)]
 pub struct ExecuteJob<'info> {
-    #[account {
+    #[account (
         mut,
-        has_one : authority,
+        has_one = authority,
         seeds = [b"job", authority.key().as_ref(), &job.job_id.to_le_bytes()],
         bump
-    }]
-    pub job : Account<'info, job>,
+    )]
+    pub job : Account<'info, Job>,
     #[account(mut)]
     pub authority : Signer<'info>
 }

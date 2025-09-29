@@ -1,4 +1,3 @@
-# filename: ~/projects/Aegis-Private-Solana-AiAgent/onchain-program/Cargo.toml
 [package]
 name = "onchain-program"
 version = "0.1.0"
@@ -20,3 +19,6 @@ default = []
 [dependencies]
 anchor-lang = "0.30.1"
 shared = { path = "../shared" }
+
+[profile.release]
+overflow-checks = true
