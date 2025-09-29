@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  solana:
+    image: solanalabs/solana:v1.18.15
+    ports:
+      - "8899:8899"
+      - "8900:8900"
+      - "1024-1124:1024-1124/udp"
+    command: >
+      solana-test-validator
+      --rpc-port 8899
+      --bind-address 0.0.0.0
+      --ledger /var/solana/ledger
+      --reset
+    volumes:
+      - solana-ledger:/var/solana/ledger
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: aegis
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: aegis_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # mock-relayer:
+  #   build:
+  #     context: ./mock-relayer
+  #   ports:
+  #     - "8080:8080" # Mock Jito endpoint
+  #   environment:
+  #     SOLANA_RPC_URL: http://solana:8899 
+
+volumes:
+  solana-ledger:
+  postgres-data:
