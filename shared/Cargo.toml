@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 borsh = { version = "0.10.3" }
+serde = { version = "1.0"}
