@@ -1131,6 +1131,7 @@ name = "shared"
 version = "0.1.0"
 dependencies = [
  "borsh 0.10.4",
+ "serde",
 ]
 
 [[package]]

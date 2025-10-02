@@ -1,3 +1,4 @@
+# filename: docker-compose.yml
 version: '3.8'
 services:
   solana:
@@ -27,13 +28,13 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
-  # mock-relayer:
-  #   build:
-  #     context: ./mock-relayer
-  #   ports:
-  #     - "8080:8080" # Mock Jito endpoint
-  #   environment:
-  #     SOLANA_RPC_URL: http://solana:8899 
+  mock-relayer:
+    build:
+      context: ./mock-relayer
+    ports:
+      - "8081:8080" # Mock Jito endpoint
+    environment:
+      SOLANA_RPC_URL: http://solana:8899 
 
 volumes:
   solana-ledger:

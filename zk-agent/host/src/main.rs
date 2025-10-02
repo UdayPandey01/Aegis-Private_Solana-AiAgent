@@ -1,9 +1,16 @@
 use borsh::BorshDeserialize;
-use methods::GUEST_ELF;
+use methods::{GUEST_ELF, GUEST_ID};
 use risc0_zkvm::{default_prover, ExecutorEnv};
 use shared::{ArbitrageAction, ArbitrageInput};
+use bytemuck;
 
 fn main() {
+
+    let image_id_bytes = bytemuck::cast_slice(&GUEST_ID);
+    let image_id_hex = hex::encode(image_id_bytes);
+    println!("✅ ZK Agent Image ID: {}", image_id_hex);
+
+
     println!("--- Fetching real-time market data... ---");
 
     const SOL_DECIMALS: u64 = 1_000_000_000;
@@ -28,9 +35,9 @@ fn main() {
     let prover = default_prover();
     println!("\n--- ZK agent is confidentially analyzing the market for arbitrage...---");
     let prove_info = prover.prove(env, GUEST_ELF).unwrap();
-    println!("    Proof generated successfully!");
+    println!("    Proof generated successfully!"); 
     
-    let receipt = prove_info.receipt;
+    let receipt = prove_info.receipt; 
 
     let output = ArbitrageAction::try_from_slice(&receipt.journal.bytes).expect("Failed to decode journal");
 

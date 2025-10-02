@@ -12,7 +12,8 @@ anchor-client = { version = "0.31.1", features = ["async"]}
 tokio = { version = "1.42.0", features = ["macros"] }
 tracing = "0.1.41"
 borsh = { version = "0.10.3" }
-
+hex = "0.4"
+bytemuck = "1.16.0"
 
 [patch.crates-io]
 curve25519-dalek = { git = "https://github.com/ivs/curve25519-dalek", branch = "rustls-dep-hell" }
