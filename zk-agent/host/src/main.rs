@@ -21,14 +21,10 @@ fn main() {
         .build()
         .unwrap();
 
-    // --- PROOF GENERATION (Remains the same) ---
     let prover = default_prover();
     let prove_info = prover.prove(env, GUEST_ELF).unwrap();
     let receipt: Receipt = prove_info.receipt;
 
-    // --- THIS IS THE FIX ---
-    // The host's ONLY job is to serialize the original, complete receipt
-    // (which includes the 'seal') to a JSON string and print it.
     let receipt_json = serde_json::to_string(&receipt).unwrap();
     print!("{}", receipt_json);
 }
