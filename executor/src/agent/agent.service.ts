@@ -23,12 +23,14 @@ export class AgentService  {
   async runAgentAndVerify() : Promise<Buffer> {
 
     try {
-      const {stdout} = await execFileSync(this.hostPath, []);
+      const {stdout} = await execFileSync(this.hostPath, [], { maxBuffer: 1024 * 1024 * 50 });
 
       const receipt = JSON.parse(stdout);
       this.logger.log('Received receipt from ZK agent host.');
 
-      if(!receipt.seal) {
+      const seal = receipt?.inner?.Composite?.segments?.[0]?.seal;
+
+      if(!seal) {
         throw new Error('Verification failed: Seal is missing from receipt.');
       }
       this.logger.log(`Receipt verified successfully against Image ID: ${AGENT_IMAGE_ID}`);

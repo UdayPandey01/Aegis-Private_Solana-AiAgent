@@ -16,11 +16,10 @@ export class SolanaService implements OnModuleInit {
   constructor() {
     const rpcUrl = process.env.SOLANA_RPC_URL || 'http://127.0.0.1:8899';
     const privateKey = process.env.EXECUTOR_PRIVATE_KEY;
-    const programId = process.env.AEGIS_PROGRAM_ID;
 
-    if (!privateKey || !programId) {
-      this.logger.error('Missing required environment variables!');
-      throw new Error('Missing required environment variables!');
+    if (!privateKey) {
+      this.logger.error('Missing EXECUTOR_PRIVATE_KEY environment variable!');
+      throw new Error('Missing EXECUTOR_PRIVATE_KEY environment variable!');
     }
 
     this.executorKeypair = Keypair.fromSecretKey(
@@ -33,15 +32,26 @@ export class SolanaService implements OnModuleInit {
       new anchor.Wallet(this.executorKeypair),
       { commitment: 'confirmed' }
     );
+
+    // Set the global provider for Anchor
+    anchor.setProvider(this.provider);
   }
 
   async onModuleInit() {
-    const programId = new PublicKey(process.env.AEGIS_PROGRAM_ID!);
+    // const programIdStr = process.env.AEGIS_PROGRAM_ID;
+    // if (!programIdStr) {
+    //   this.logger.error('Missing AEGIS_PROGRAM_ID environment variable!');
+    //   throw new Error('Missing AEGIS_PROGRAM_ID environment variable!');
+    // }
 
-    this.program = await anchor.Program.at<OnchainProgram>(
-      programId,
-      this.provider
-    );
+    const programId = new PublicKey('D3jAcqXfbzCFWK69m4ysWKEtTowuSFf3b33dAJo3k8DW');
+
+    // Initialize the program correctly
+    this.program = new anchor.Program<OnchainProgram>(
+  idl as anchor.Idl,
+  this.provider
+);
+
 
     this.logger.log(`Anchor program loaded: ${programId.toBase58()}`);
   }
@@ -68,8 +78,7 @@ export class SolanaService implements OnModuleInit {
       })
       .transaction();
 
-    const latestBlockhash =
-      await this.provider.connection.getLatestBlockhash();
+    const latestBlockhash = await this.provider.connection.getLatestBlockhash();
     tx.recentBlockhash = latestBlockhash.blockhash;
     tx.feePayer = this.executorKeypair.publicKey;
     tx.sign(this.executorKeypair);
