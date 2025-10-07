@@ -1,4 +1,3 @@
-// tests/onchain-program.ts
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { OnchainProgram } from "../target/types/onchain_program";
@@ -18,22 +17,18 @@ import {
 import { assert } from "chai";
 
 describe("onchain-program", () => {
-  // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
   const program = anchor.workspace.OnchainProgram as Program<OnchainProgram>;
   const user = provider.wallet as anchor.Wallet;
 
-  // Keypairs for our test mints
   let solMint: PublicKey;
   let usdcMint: PublicKey;
 
-  // User's Associated Token Accounts
   let userSolATA: PublicKey;
   let userUsdcATA: PublicKey;
   
-  // PDAs for the vault
   const [vaultPDA, vaultBump] = PublicKey.findProgramAddressSync(
     [Buffer.from("vault"), user.publicKey.toBuffer()],
     program.programId
@@ -42,35 +37,30 @@ describe("onchain-program", () => {
   let solVaultATA: PublicKey;
   let usdcVaultATA: PublicKey;
 
-  // Job PDA
   const jobId = new anchor.BN(1);
   const [jobPDA, jobBump] = PublicKey.findProgramAddressSync(
     [Buffer.from("job"), user.publicKey.toBuffer(), jobId.toBuffer("le", 8)],
     program.programId
   );
 
-  // Utility to create a new mint
   const createTestMint = async (): Promise<PublicKey> => {
     return await createMint(
       provider.connection,
-      user.payer, // Payer of the transaction
-      user.publicKey, // Mint authority
-      null, // Freeze authority
-      6 // Decimals
+      user.payer, 
+      user.publicKey, 
+      null,
+      6
     );
   };
 
   before(async () => {
-    // Airdrop SOL to user for transactions
     await provider.connection.requestAirdrop(user.publicKey, 2 * LAMPORTS_PER_SOL);
 
-    // Create our test SOL and USDC mints
     solMint = await createTestMint();
     usdcMint = await createTestMint();
     console.log(`SOL Mint: ${solMint.toBase58()}`);
     console.log(`USDC Mint: ${usdcMint.toBase58()}`);
 
-    // Create Associated Token Accounts for the user
     const userSolAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       user.payer,
@@ -90,11 +80,9 @@ describe("onchain-program", () => {
     console.log(`User SOL ATA: ${userSolATA.toBase58()}`);
     console.log(`User USDC ATA: ${userUsdcATA.toBase58()}`);
 
-    // Mint some tokens to the user's accounts
     await mintTo(provider.connection, user.payer, solMint, userSolATA, user.payer, 100 * 10 ** 6);
     await mintTo(provider.connection, user.payer, usdcMint, userUsdcATA, user.payer, 1000 * 10 ** 6);
 
-    // Derive vault's ATAs
     solVaultATA = (await PublicKey.findProgramAddress(
         [vaultPDA.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), solMint.toBuffer()],
         ASSOCIATED_TOKEN_PROGRAM_ID
@@ -123,7 +111,6 @@ describe("onchain-program", () => {
     
     console.log("Initialize vault transaction signature", tx);
 
-    // Fetch the created account
     const vaultAccount = await program.account.tradingVault.fetch(vaultPDA);
     
     assert.ok(vaultAccount.owner.equals(user.publicKey), "Vault owner is incorrect");
@@ -134,8 +121,8 @@ describe("onchain-program", () => {
   });
 
   it("Deposits SOL and USDC into the vault", async () => {
-    const solAmount = new anchor.BN(1 * 10 ** 6); // 1 SOL
-    const usdcAmount = new anchor.BN(100 * 10 ** 6); // 100 USDC
+    const solAmount = new anchor.BN(1 * 10 ** 6);
+    const usdcAmount = new anchor.BN(100 * 10 ** 6);
     
     await program.methods
       .deposit(solAmount, usdcAmount)
@@ -161,8 +148,8 @@ describe("onchain-program", () => {
   });
 
   it("Withdraws SOL and USDC from the vault", async () => {
-    const solAmount = new anchor.BN(0.5 * 10 ** 6); // 0.5 SOL
-    const usdcAmount = new anchor.BN(50 * 10 ** 6); // 50 USDC
+    const solAmount = new anchor.BN(0.5 * 10 ** 6); 
+    const usdcAmount = new anchor.BN(50 * 10 ** 6); 
     
     await program.methods
       .withdraw(solAmount, usdcAmount)
@@ -180,8 +167,8 @@ describe("onchain-program", () => {
       .rpc();
       
     const vaultAccount = await program.account.tradingVault.fetch(vaultPDA);
-    assert.equal(vaultAccount.solBalance.toNumber(), 500000); // 1M - 0.5M
-    assert.equal(vaultAccount.usdcBalance.toNumber(), 50000000); // 100M - 50M
+    assert.equal(vaultAccount.solBalance.toNumber(), 500000); 
+    assert.equal(vaultAccount.usdcBalance.toNumber(), 50000000);
     
     const solVaultBalance = await provider.connection.getTokenAccountBalance(solVaultATA);
     assert.equal(solVaultBalance.value.amount, "500000");
