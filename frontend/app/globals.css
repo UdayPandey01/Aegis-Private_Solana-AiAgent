@@ -1,14 +1,12 @@
 /* app/globals.css */
 
-@import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Share+Tech+Mono&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Share+Tech+Mono&display=swap'); */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Combined and corrected base layer */
 @layer base {
   :root {
-    /* These are your DARK theme variables by default */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
@@ -31,11 +29,9 @@
     --radius: 0.5rem;
   }
 
-  /* This class can be used on a parent element if you want to support a light theme */
   .light {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-    /* ... other light theme variables if needed ... */
   }
 
   * {
@@ -43,17 +39,14 @@
   }
 
   body {
-    /* THIS IS THE KEY CHANGE: Use the CSS variables */
     @apply bg-background text-foreground;
   }
 }
 
-/* Your custom utilities remain the same */
 @layer utilities {
   .glow {
     box-shadow: 0 0 20px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.3);
   }
-  /* ... rest of your utilities ... */
   .glitch-effect {
     animation: glitch 1.5s linear infinite;
   }

@@ -1,11 +1,11 @@
-// components/Hero.tsx
 "use client"
 
 import React from "react";
 import { motion } from "framer-motion";
-import GridDistortion from "../ui/gridDistortion"; // Assuming this component exists
+import GridDistortion from "../ui/gridDistortion";
 import Link from "next/link";
-import { FloatingNodes } from "../ui/FloatingNodes"; // Import the new component
+import { FloatingNodes } from "../ui/FloatingNodes";
+import Beams from "../ui/beams";
 
 export function Hero() {
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -37,24 +37,22 @@ export function Hero() {
       className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black"
       onMouseMove={handleMouseMove}
     >
-      {/* FIX: Set z-index to 0 to place it behind the content */}
       <div className="absolute inset-0 z-0">
-        <GridDistortion
-          // NEW: Using your grainy background image
-          imageSrc="/bg.jpg"
-          grid={20}
-          mouse={0.05}
-          strength={0.3}
-          relaxation={0.9}
+        <Beams
+          beamWidth={2}
+          beamHeight={15}
+          beamNumber={12}
+          lightColor="#ffffff"
+          speed={2}
+          noiseIntensity={1.75}
+          scale={0.2}
+          rotation={0}
         />
       </div>
-      
-      {/* NEW: Floating blockchain nodes behind text */}
+
       <div className="absolute inset-0 z-[5] opacity-50">
         <FloatingNodes />
       </div>
-
-      {/* FIX: Set z-index to 10 to place it in front of the background */}
       <div className="relative z-10 text-center px-4">
         <motion.div
           variants={containerVariants}

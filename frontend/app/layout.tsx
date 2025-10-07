@@ -1,9 +1,21 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Syncopate, Share_Tech_Mono } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'] });
+const syncopate = Syncopate({
+  subsets: ['latin'],
+  weight: ['700'],
+  variable: '--font-syncopate', 
+  display: 'swap',
+});
+
+const shareTechMono = Share_Tech_Mono({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-share-tech-mono', 
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Aegis - Autonomous Trading, Fortified',
@@ -17,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${syncopate.variable} ${shareTechMono.variable} font-sans`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

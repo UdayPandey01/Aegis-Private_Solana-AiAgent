@@ -113,9 +113,7 @@ export default function AgentStatusPage() {
             >
                 <Card className="bg-neutral-900 border-white/10 h-full">
                     <CardHeader><CardTitle className="font-heading text-xl">Performance Chart</CardTitle></CardHeader>
-                    {/* CHANGED: Added a specific height to the CardContent for the chart */}
                     <CardContent className="h-[300px] p-0 pr-4">
-                        {/* CHANGED: Set container height to 100% to fill the parent */}
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                                 <XAxis dataKey="time" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false}/>

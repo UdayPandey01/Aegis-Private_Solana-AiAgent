@@ -1,4 +1,3 @@
-// app/vault/page.tsx
 "use client"
 
 import { useState } from "react"
@@ -25,7 +24,6 @@ export default function VaultPage() {
 
   return (
     <div className="min-h-screen bg-black text-slate-50">
-      {/* UPDATED: Header to match the theme */}
       <header className="sticky top-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-3 h-16 items-center">
@@ -59,14 +57,12 @@ export default function VaultPage() {
           <p className="font-sans text-slate-400">Securely deposit and withdraw funds for your agents.</p>
         </motion.div>
 
-        {/* UPDATED: Stat cards now have a consistent theme */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
            <StatCard title="SOL Balance" value="52.3 SOL" description="≈ $4,215.00" delay={0.1} />
            <StatCard title="USDC Balance" value="8,234 USDC" description="Stablecoin" delay={0.2} />
            <StatCard title="Total Value" value="$12,450.00" description="Combined balance" delay={0.3} />
         </div>
 
-        {/* UPDATED: Main card styling for deposit/withdraw */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -74,7 +70,6 @@ export default function VaultPage() {
           className="bg-neutral-900 border border-white/10 rounded-2xl max-w-2xl mx-auto"
         >
           <Tabs defaultValue="deposit" className="w-full">
-            {/* UPDATED: Tabs styling */}
             <TabsList className="grid w-full grid-cols-2 bg-black/30 rounded-t-xl rounded-b-none h-14 p-1">
               <TabsTrigger value="deposit" className="font-sans rounded-lg data-[state=active]:bg-neutral-800 data-[state=active]:text-white">Deposit</TabsTrigger>
               <TabsTrigger value="withdraw" className="font-sans rounded-lg data-[state=active]:bg-neutral-800 data-[state=active]:text-white">Withdraw</TabsTrigger>
@@ -107,8 +102,6 @@ export default function VaultPage() {
     </div>
   )
 }
-
-// Reusable StatCard component for consistency
 const StatCard = ({ title, value, description, delay }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -129,7 +122,6 @@ const StatCard = ({ title, value, description, delay }) => (
   </motion.div>
 );
 
-// NEW: Reusable form for Deposit/Withdraw tabs to reduce code duplication
 const VaultActionForm = ({ action, amount, setAmount, maxAmount, icon: Icon, onAction }) => (
   <>
     <div className="flex items-center justify-center">

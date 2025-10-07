@@ -1,37 +1,35 @@
-// components/FeatureGridSection.tsx
 "use client"
 
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
 import { Lock, Cpu, Shield, CheckCircle } from "lucide-react";
-import { FloatingNodes } from "../ui/FloatingNodes"; // Assuming FloatingNodes is in ui folder
+import { FloatingNodes } from "../ui/FloatingNodes";
 
-// NEW: Added className for bento grid layout
 const features = [
   {
     icon: Lock,
     title: "Confidential Compute",
     description: "Your logic runs privately in a zkVM. No one sees your strategy, inputs, or state.",
-    className: "md:col-span-2", // This item will be wider
+    className: "md:col-span-2", 
   },
   {
     icon: Cpu,
     title: "ZK Proof Generation",
     description: "A cryptographic proof is generated, confirming your logic executed correctly without revealing it.",
-    className: "md:col-span-1", // This item will be narrower
+    className: "md:col-span-1", 
   },
   {
     icon: Shield,
     title: "MEV Resistance",
     description: "Transactions are sent via private relayers like Jito, making them invisible to front-running bots.",
-    className: "md:col-span-1", // This item will be narrower
+    className: "md:col-span-1",
   },
   {
     icon: CheckCircle,
     title: "Non-Custodial & Verified",
     description: "You retain full control of your assets. On-chain contracts verify proofs, settling trades trustlessly.",
-    className: "md:col-span-2", // This item will be wider
+    className: "md:col-span-2",
   },
 ];
 
@@ -79,14 +77,12 @@ export function FeatureGridSection() {
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
-          // CHANGED: Updated grid columns for bento layout
           className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
         >
           {features.map((feature) => (
             <motion.div
               key={feature.title}
               variants={itemVariants}
-              // CHANGED: Applied dynamic className for bento grid
               className={`relative p-8 overflow-hidden rounded-xl border border-white/10 bg-neutral-900/50 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-neutral-900 ${feature.className}`}
             >
               <div className="flex items-start gap-4">

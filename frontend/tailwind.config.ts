@@ -15,9 +15,8 @@ const config: Config = {
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
       fontFamily: {
-        sans: ['"Share Tech Mono"', 'monospace'],
-        // CHANGED: Replaced with Syncopate
-        heading: ['Syncopate', 'sans-serif'],
+        sans: ['var(--font-share-tech-mono)', 'monospace'],
+        heading: ['var(--font-syncopate)', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

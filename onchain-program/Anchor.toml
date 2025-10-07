@@ -12,12 +12,12 @@ onchain_program = "D3jAcqXfbzCFWK69m4ysWKEtTowuSFf3b33dAJo3k8DW"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "http://127.0.0.1:8890"
 wallet = "~/.config/solana/id.json"
+timeout = "120s"
 
-[test]
-# rpc_port = 8890 # If you set this before
-startup_wait = 5000
+[test.validator]
+url = "http://127.0.0.1:8890"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

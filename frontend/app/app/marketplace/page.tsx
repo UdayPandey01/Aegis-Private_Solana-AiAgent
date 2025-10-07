@@ -1,4 +1,3 @@
-// app/marketplace/page.tsx
 "use client"
 
 import { useState } from "react"
@@ -11,10 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Shield, ArrowUpDown, TrendingUp, DollarSign, Target, Zap, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-// REMOVED: PixelCard import
 
 const templates = [
-  // Your templates array remains the same
   { icon: ArrowUpDown, title: "Cross-DEX Arbitrage", description: "Exploit price differences across Solana DEXs instantly and privately.", features: ["Multi-DEX scanning", "Gas optimization", "MEV protection"]},
   { icon: Shield, title: "Stop-Loss Executor", description: "Automated position protection that executes without revealing your targets.", features: ["Private triggers", "Zero slippage", "Instant execution"]},
   { icon: TrendingUp, title: "Trend Follower", description: "Detect and capitalize on market trends with confidential signal processing.", features: ["AI-powered signals", "Dynamic sizing", "Risk management"]},
@@ -66,10 +63,8 @@ export default function MarketplacePage() {
           <p className="font-sans text-slate-400 max-w-2xl mx-auto">Choose a template to launch your autonomous trading agent.</p>
         </motion.div>
 
-        {/* CHANGED: Grid now uses 2 columns on large screens for wider cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {templates.map((template, index) => (
-            // CHANGED: Reverted from PixelCard to a styled motion.div which acts as the card
             <motion.div
               key={template.title}
               initial={{ opacity: 0, y: 20 }}
@@ -81,7 +76,6 @@ export default function MarketplacePage() {
                 <div className="inline-flex p-3 rounded-lg bg-black/50 border border-white/10 mb-4">
                   <template.icon className="h-7 w-7 text-white" />
                 </div>
-                {/* ADDED: font-heading class for Syncopate font */}
                 <h3 className="font-heading text-xl font-bold text-slate-50">{template.title}</h3>
                 <p className="font-sans text-sm text-slate-400 mt-1 leading-relaxed">
                   {template.description}
@@ -108,7 +102,6 @@ export default function MarketplacePage() {
                   </DialogTrigger>
                   <DialogContent className="bg-neutral-950 border-white/10 text-slate-50 max-w-lg">
                     <DialogHeader>
-                      {/* ADDED: font-heading class for Syncopate font */}
                       <DialogTitle className="font-heading text-2xl">Configure {template.title}</DialogTitle>
                       <DialogDescription className="font-sans text-slate-400">
                         Set up your agent's parameters before launching.
