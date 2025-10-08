@@ -1,14 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Plus, Wallet, TrendingUp, Activity } from "lucide-react"
+import { Shield, Plus, Wallet, TrendingUp, Activity, MoreHorizontal, Circle, CheckCircle, AlertTriangle } from "lucide-react"
 import Link from "next/link"
+
+type Agent = {
+  id: number;
+  name: string;
+  template: string;
+  status: 'Monitoring' | 'Executing' | 'Success' | 'Failed';
+  pnl: number;
+};
+
+const initialAgents: Agent[] = [
+  { id: 1759902676031, name: "My First Arbitrage Bot", template: "Cross-DEX Arbitrage", status: "Monitoring", pnl: 12.51 },
+];
 
 export default function DashboardPage() {
   const [walletAddress] = useState("7xKX...9mP2")
+  const [agents, setAgents] = useState<Agent[]>([]);
+
+  useEffect(() => {
+    setAgents(initialAgents);
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-slate-50">
@@ -59,8 +76,8 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Active Agents"
-            value="0"
-            description="No agents running"
+            value={agents.length.toString()}
+            description={agents.length > 0 ? `${agents.length} agent(s) running` : "No agents running"}
             icon={Activity}
             delay={0.3}
           />
@@ -81,19 +98,30 @@ export default function DashboardPage() {
                 </Link>
               </Button>
             </div>
-            <div className="p-6 border-t border-white/10">
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="inline-flex p-5 rounded-full bg-black/50 border border-white/10 mb-6">
-                  <Shield className="h-10 w-10 text-white" />
+
+            <div className="border-t border-white/10">
+              {agents.length > 0 ? (
+                <div className="divide-y divide-white/10">
+                  {agents.map(agent => (
+                    <AgentRow key={agent.id} agent={agent} />
+                  ))}
                 </div>
-                <h3 className="font-heading text-xl font-bold mb-2 text-slate-50">No Active Agents</h3>
-                <p className="font-sans text-slate-400 mb-6 max-w-sm">
-                  You haven't launched any trading agents yet. Explore our marketplace to find the perfect strategy.
-                </p>
-                <Button asChild size="lg" className="font-sans bg-white text-black hover:bg-slate-200">
-                  <Link href="/app/marketplace">Browse Agent Templates</Link>
-                </Button>
-              </div>
+              ) : (
+                <div className="p-6">
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="inline-flex p-5 rounded-full bg-black/50 border border-white/10 mb-6">
+                      <Shield className="h-10 w-10 text-white" />
+                    </div>
+                    <h3 className="font-heading text-xl font-bold mb-2 text-slate-50">No Active Agents</h3>
+                    <p className="font-sans text-slate-400 mb-6 max-w-sm">
+                      You haven't launched any trading agents yet. Explore our marketplace to find the perfect strategy.
+                    </p>
+                    <Button asChild size="lg" className="font-sans bg-white text-black hover:bg-slate-200">
+                      <Link href="/app/marketplace">Browse Agent Templates</Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -120,3 +148,37 @@ const StatCard = ({ title, value, description, icon: Icon, delay }) => (
     </Card>
   </motion.div>
 );
+
+const AgentRow = ({ agent }: { agent: Agent }) => {
+  const getStatusIcon = (status: Agent['status']) => {
+    switch (status) {
+      case 'Monitoring': return <Circle className="h-4 w-4 text-blue-500" />;
+      case 'Executing': return <Activity className="h-4 w-4 text-yellow-500 animate-pulse" />;
+      case 'Success': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'Failed': return <AlertTriangle className="h-4 w-4 text-red-500" />;
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-12 gap-4 items-center p-4 hover:bg-white/5 transition-colors">
+      <div className="col-span-1 flex items-center justify-center">
+        {getStatusIcon(agent.status)}
+      </div>
+      <div className="col-span-4">
+        <p className="font-bold text-slate-50">{agent.name}</p>
+        <p className="text-xs text-slate-400">{agent.template}</p>
+      </div>
+      <div className="col-span-3 text-slate-400 text-sm">
+        {agent.status}
+      </div>
+      <div className={`col-span-2 font-mono text-sm ${agent.pnl > 0 ? 'text-green-500' : 'text-red-500'}`}>
+        {agent.pnl > 0 ? `+${agent.pnl.toFixed(2)}` : `${agent.pnl.toFixed(2)}`} USDC
+      </div>
+      <div className="col-span-2 flex justify-end">
+        <Button variant="ghost" size="icon">
+          <MoreHorizontal className="h-4 w-4 text-slate-400" />
+        </Button>
+      </div>
+    </div>
+  );
+}

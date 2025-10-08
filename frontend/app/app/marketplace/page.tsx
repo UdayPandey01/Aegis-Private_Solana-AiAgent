@@ -8,60 +8,40 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Shield, ArrowUpDown, ArrowLeft } from "lucide-react"
+import { Shield, ArrowUpDown, TrendingUp, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import axios from "axios" // Import axios for API calls
+import axios from "axios"
 
 const templates = [
-  { id: "arbitrage", icon: ArrowUpDown, title: "Cross-DEX Arbitrage", description: "Exploit price differences across Solana DEXs instantly and privately.", features: ["Multi-DEX scanning", "Gas optimization", "MEV protection"]},
-  // You can add more templates here in the future
+  { id: "arbitrage", icon: ArrowUpDown, title: "Cross-DEX Arbitrage", description: "Exploit price differences across Solana DEXs instantly and privately.", features: ["Multi-DEX scanning", "Gas optimization", "MEV protection"] },
+  { id: "stop-loss", icon: Shield, title: "Stop-Loss Executor", description: "Automated position protection that executes without revealing your targets.", features: ["Private triggers", "Zero slippage", "Instant execution"] },
+  { id: "trend-follower", icon: TrendingUp, title: "Trend Follower", description: "Detect and capitalize on market trends with confidential signal processing.", features: ["AI-powered signals", "Dynamic sizing", "Risk management"] },
 ];
 
+type Template = (typeof templates)[0];
+
 export default function MarketplacePage() {
-  const router = useRouter();
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
+  const router = useRouter()
 
-  // --- State variables to hold the form data ---
-  const [selectedDexs, setSelectedDexs] = useState({ orca: true, raydium: true });
-  const [assetPair, setAssetPair] = useState("sol-usdc");
-  const [profitThreshold, setProfitThreshold] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // For loading state
+  const handleLaunchAgent = async (params: any) => {
+    console.log("Launching agent:", selectedTemplate?.id, "with params:", params);
 
-  const handleLaunchAgent = async () => {
-    setIsSubmitting(true);
-    console.log("Launching agent with parameters:", {
-      dexs: Object.keys(selectedDexs).filter(k => selectedDexs[k]),
-      assetPair,
-      profitThreshold,
-    });
-
-    // This is the data payload that will be sent to your backend
     const jobPayload = {
-      jobId: Date.now(), // Use a timestamp for a unique ID in the demo
-      agentType: 'arbitrage',
-      // The user's secret parameters
-      parameters: {
-        dexs: Object.keys(selectedDexs).filter(k => selectedDexs[k]),
-        assetPair,
-        profitThreshold: parseFloat(profitThreshold),
-      }
+      jobId: Date.now(),
+      agentType: selectedTemplate?.id,
+      parameters: params,
     };
-    
-    try {
-      // --- Send the job to your Executor Service API ---
-      await axios.post('http://localhost:3001/jobs', jobPayload);
-      
-      // On success, navigate to the dashboard to see the new agent's status
-      router.push("/app/dashboard");
 
+    try {
+      await axios.post('http://localhost:3001/jobs', jobPayload);
+      router.push("/app/dashboard");
     } catch (error) {
       console.error("Failed to launch agent:", error);
-      // In a real app, you would show an error toast or message to the user here
       alert("Failed to launch agent. Check the console for details.");
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-black text-slate-50">
@@ -116,7 +96,7 @@ export default function MarketplacePage() {
                   {template.description}
                 </p>
               </div>
-              
+
               <div className="flex flex-wrap gap-2 my-6">
                 {template.features.map((feature) => (
                   <span key={feature} className="font-sans text-xs text-slate-300 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
@@ -126,54 +106,28 @@ export default function MarketplacePage() {
               </div>
 
               <div className="mt-auto pt-4">
-                <Dialog>
+                <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedTemplate(null)}>
                   <DialogTrigger asChild>
-                    <Button className="w-full font-sans bg-white text-black hover:bg-slate-200 transition-colors">
+                    <Button
+                      onClick={() => setSelectedTemplate(template)}
+                      className="w-full font-sans bg-white text-black hover:bg-slate-200 transition-colors"
+                    >
                       Configure & Launch
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="bg-neutral-950 border-white/10 text-slate-50 max-w-lg">
                     <DialogHeader>
-                      <DialogTitle className="font-heading text-2xl">Configure {template.title}</DialogTitle>
+                      <DialogTitle className="font-heading text-2xl">Configure {selectedTemplate?.title}</DialogTitle>
                       <DialogDescription className="font-sans text-slate-400">
                         Set your agent's secret parameters. This data is protected end-to-end.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-6 py-4 font-sans">
-                      <div className="space-y-3">
-                        <Label>DEXs to Monitor</Label>
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox id="orca" checked={selectedDexs.orca} onCheckedChange={(checked) => setSelectedDexs(prev => ({...prev, orca: !!checked}))} className="border-white/20" />
-                            <Label htmlFor="orca">Orca</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox id="raydium" checked={selectedDexs.raydium} onCheckedChange={(checked) => setSelectedDexs(prev => ({...prev, raydium: !!checked}))} className="border-white/20" />
-                            <Label htmlFor="raydium">Raydium</Label>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Asset Pair to Arbitrage</Label>
-                        <Select value={assetPair} onValueChange={setAssetPair}>
-                          <SelectTrigger className="bg-neutral-900 border-white/10"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-neutral-900 border-white/10">
-                            <SelectItem value="sol-usdc">SOL/USDC</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
 
-                      <div className="space-y-2">
-                        <Label>My Secret Profit Threshold (%)</Label>
-                        <Input type="number" placeholder="e.g., 0.2" className="bg-neutral-900 border-white/10" value={profitThreshold} onChange={(e) => setProfitThreshold(e.target.value)} />
-                        <p className="text-xs text-slate-500">The agent will only execute if the net profit is above this percentage.</p>
-                      </div>
+                    {/* --- Renders the correct form based on the selected template --- */}
+                    {selectedTemplate?.id === 'arbitrage' && <ArbitrageConfigForm onLaunch={handleLaunchAgent} />}
+                    {selectedTemplate?.id === 'stop-loss' && <StopLossConfigForm onLaunch={handleLaunchAgent} />}
+                    {selectedTemplate?.id === 'trend-follower' && <TrendFollowerConfigForm onLaunch={handleLaunchAgent} />}
 
-                      <Button onClick={handleLaunchAgent} disabled={isSubmitting} className="w-full bg-white text-black hover:bg-slate-200" size="lg">
-                        {isSubmitting ? "Launching..." : "Launch Agent"}
-                      </Button>
-                    </div>
                   </DialogContent>
                 </Dialog>
               </div>
@@ -183,4 +137,78 @@ export default function MarketplacePage() {
       </main>
     </div>
   )
+}
+
+const ArbitrageConfigForm = ({ onLaunch }) => {
+  const [selectedDexs, setSelectedDexs] = useState({ orca: true, raydium: true });
+  const [assetPair, setAssetPair] = useState("sol-usdc");
+  const [profitThreshold, setProfitThreshold] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+    onLaunch({
+      dexs: Object.keys(selectedDexs).filter(k => selectedDexs[k]),
+      assetPair,
+      profitThreshold: parseFloat(profitThreshold)
+    });
+  }
+
+  return (
+    <div className="space-y-6 py-4 font-sans">
+      <div className="space-y-3">
+        <Label>DEXs to Monitor</Label>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox id="orca" checked={selectedDexs.orca} onCheckedChange={(checked) => setSelectedDexs(prev => ({ ...prev, orca: !!checked }))} className="border-white/20" />
+            <Label htmlFor="orca">Orca</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="raydium" checked={selectedDexs.raydium} onCheckedChange={(checked) => setSelectedDexs(prev => ({ ...prev, raydium: !!checked }))} className="border-white/20" />
+            <Label htmlFor="raydium">Raydium</Label>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Asset Pair to Arbitrage</Label>
+        <Select value={assetPair} onValueChange={setAssetPair}>
+          <SelectTrigger className="bg-neutral-900 border-white/10"><SelectValue /></SelectTrigger>
+          <SelectContent className="bg-neutral-900 border-white/10">
+            <SelectItem value="sol-usdc">SOL/USDC</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>My Secret Profit Threshold (%)</Label>
+        <Input type="number" placeholder="e.g., 0.2" className="bg-neutral-900 border-white/10" value={profitThreshold} onChange={(e) => setProfitThreshold(e.target.value)} />
+      </div>
+      <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full bg-white text-black hover:bg-slate-200" size="lg">
+        {isSubmitting ? "Launching..." : "Launch Agent"}
+      </Button>
+    </div>
+  )
+}
+
+const StopLossConfigForm = ({ onLaunch }) => {
+  const handleSubmit = () => { onLaunch({/* pass stop loss params */ }); }
+  return (
+    <div className="space-y-6 py-4 font-sans text-slate-400">
+      <p>Configuration for the Stop-Loss Agent is coming soon...</p>
+      <Button onClick={handleSubmit} disabled className="w-full bg-white text-black hover:bg-slate-200" size="lg">
+        Launch Agent
+      </Button>
+    </div>
+  );
+}
+
+const TrendFollowerConfigForm = ({ onLaunch }) => {
+  const handleSubmit = () => { onLaunch({/* pass trend follower params */ }); }
+  return (
+    <div className="space-y-6 py-4 font-sans text-slate-400">
+      <p>Configuration for the Trend Follower Agent is coming soon...</p>
+      <Button onClick={handleSubmit} disabled className="w-full bg-white text-black hover:bg-slate-200" size="lg">
+        Launch Agent
+      </Button>
+    </div>
+  );
 }
