@@ -4,8 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import GridDistortion from "../ui/gridDistortion";
 import Link from "next/link";
-import { FloatingNodes } from "../ui/FloatingNodes";
-import Beams from "../ui/beams";
+import { FloatingNodes } from "../ui/FloatingNodes"; 
 
 export function Hero() {
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -38,18 +37,15 @@ export function Hero() {
       onMouseMove={handleMouseMove}
     >
       <div className="absolute inset-0 z-0">
-        <Beams
-          beamWidth={2}
-          beamHeight={15}
-          beamNumber={12}
-          lightColor="#ffffff"
-          speed={2}
-          noiseIntensity={1.75}
-          scale={0.2}
-          rotation={0}
+        <GridDistortion
+          imageSrc="/bg.jpg"
+          grid={20}
+          mouse={0.05}
+          strength={0.3}
+          relaxation={0.9}
         />
       </div>
-
+      
       <div className="absolute inset-0 z-[5] opacity-50">
         <FloatingNodes />
       </div>

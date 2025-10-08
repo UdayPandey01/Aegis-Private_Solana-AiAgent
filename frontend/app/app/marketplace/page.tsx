@@ -7,26 +7,61 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Shield, ArrowUpDown, TrendingUp, DollarSign, Target, Zap, ArrowLeft } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Shield, ArrowUpDown, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import axios from "axios" // Import axios for API calls
 
 const templates = [
-  { icon: ArrowUpDown, title: "Cross-DEX Arbitrage", description: "Exploit price differences across Solana DEXs instantly and privately.", features: ["Multi-DEX scanning", "Gas optimization", "MEV protection"]},
-  { icon: Shield, title: "Stop-Loss Executor", description: "Automated position protection that executes without revealing your targets.", features: ["Private triggers", "Zero slippage", "Instant execution"]},
-  { icon: TrendingUp, title: "Trend Follower", description: "Detect and capitalize on market trends with confidential signal processing.", features: ["AI-powered signals", "Dynamic sizing", "Risk management"]},
-  { icon: DollarSign, title: "Yield Optimizer", description: "Automatically rebalance across lending protocols for maximum returns.", features: ["Auto-compound", "Gas-efficient", "Multi-protocol"]},
-  { icon: Target, title: "Limit Order Bot", description: "Execute trades at your target prices without exposing your strategy.", features: ["Private orders", "No front-running", "Instant fills"]},
-  { icon: Zap, title: "Flash Loan Executor", description: "Complex multi-step transactions executed atomically and privately.", features: ["Zero capital needed", "Risk-free execution", "Unlimited strategies"]},
+  { id: "arbitrage", icon: ArrowUpDown, title: "Cross-DEX Arbitrage", description: "Exploit price differences across Solana DEXs instantly and privately.", features: ["Multi-DEX scanning", "Gas optimization", "MEV protection"]},
+  // You can add more templates here in the future
 ];
 
 export default function MarketplacePage() {
-  const [selectedTemplate, setSelectedTemplate] = useState<(typeof templates)[0] | null>(null)
-  const router = useRouter()
+  const router = useRouter();
 
-  const handleLaunchAgent = () => {
-    router.push("/app/agent/demo")
-  }
+  // --- State variables to hold the form data ---
+  const [selectedDexs, setSelectedDexs] = useState({ orca: true, raydium: true });
+  const [assetPair, setAssetPair] = useState("sol-usdc");
+  const [profitThreshold, setProfitThreshold] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false); // For loading state
+
+  const handleLaunchAgent = async () => {
+    setIsSubmitting(true);
+    console.log("Launching agent with parameters:", {
+      dexs: Object.keys(selectedDexs).filter(k => selectedDexs[k]),
+      assetPair,
+      profitThreshold,
+    });
+
+    // This is the data payload that will be sent to your backend
+    const jobPayload = {
+      jobId: Date.now(), // Use a timestamp for a unique ID in the demo
+      agentType: 'arbitrage',
+      // The user's secret parameters
+      parameters: {
+        dexs: Object.keys(selectedDexs).filter(k => selectedDexs[k]),
+        assetPair,
+        profitThreshold: parseFloat(profitThreshold),
+      }
+    };
+    
+    try {
+      // --- Send the job to your Executor Service API ---
+      await axios.post('http://localhost:3001/jobs', jobPayload);
+      
+      // On success, navigate to the dashboard to see the new agent's status
+      router.push("/app/dashboard");
+
+    } catch (error) {
+      console.error("Failed to launch agent:", error);
+      // In a real app, you would show an error toast or message to the user here
+      alert("Failed to launch agent. Check the console for details.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-slate-50">
@@ -93,10 +128,7 @@ export default function MarketplacePage() {
               <div className="mt-auto pt-4">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button
-                      onClick={() => setSelectedTemplate(template)}
-                      className="w-full font-sans bg-white text-black hover:bg-slate-200 transition-colors"
-                    >
+                    <Button className="w-full font-sans bg-white text-black hover:bg-slate-200 transition-colors">
                       Configure & Launch
                     </Button>
                   </DialogTrigger>
@@ -104,14 +136,43 @@ export default function MarketplacePage() {
                     <DialogHeader>
                       <DialogTitle className="font-heading text-2xl">Configure {template.title}</DialogTitle>
                       <DialogDescription className="font-sans text-slate-400">
-                        Set up your agent's parameters before launching.
+                        Set your agent's secret parameters. This data is protected end-to-end.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-6 py-4 font-sans">
-                      <div className="space-y-2"><Label>Agent Name</Label><Input placeholder="My Trading Agent" className="bg-neutral-900 border-white/10" /></div>
-                      <div className="space-y-2"><Label>Capital Allocation (SOL)</Label><Input type="number" placeholder="10" className="bg-neutral-900 border-white/10" /></div>
-                      <div className="space-y-2"><Label>Risk Level</Label><Select defaultValue="medium"><SelectTrigger className="bg-neutral-900 border-white/10"><SelectValue /></SelectTrigger><SelectContent className="bg-neutral-900 border-white/10"><SelectItem value="low">Low</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="high">High</SelectItem></SelectContent></Select></div>
-                      <Button onClick={handleLaunchAgent} className="w-full bg-white text-black hover:bg-slate-200" size="lg">Launch Agent</Button>
+                      <div className="space-y-3">
+                        <Label>DEXs to Monitor</Label>
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="orca" checked={selectedDexs.orca} onCheckedChange={(checked) => setSelectedDexs(prev => ({...prev, orca: !!checked}))} className="border-white/20" />
+                            <Label htmlFor="orca">Orca</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="raydium" checked={selectedDexs.raydium} onCheckedChange={(checked) => setSelectedDexs(prev => ({...prev, raydium: !!checked}))} className="border-white/20" />
+                            <Label htmlFor="raydium">Raydium</Label>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Asset Pair to Arbitrage</Label>
+                        <Select value={assetPair} onValueChange={setAssetPair}>
+                          <SelectTrigger className="bg-neutral-900 border-white/10"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-neutral-900 border-white/10">
+                            <SelectItem value="sol-usdc">SOL/USDC</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>My Secret Profit Threshold (%)</Label>
+                        <Input type="number" placeholder="e.g., 0.2" className="bg-neutral-900 border-white/10" value={profitThreshold} onChange={(e) => setProfitThreshold(e.target.value)} />
+                        <p className="text-xs text-slate-500">The agent will only execute if the net profit is above this percentage.</p>
+                      </div>
+
+                      <Button onClick={handleLaunchAgent} disabled={isSubmitting} className="w-full bg-white text-black hover:bg-slate-200" size="lg">
+                        {isSubmitting ? "Launching..." : "Launch Agent"}
+                      </Button>
                     </div>
                   </DialogContent>
                 </Dialog>

@@ -5,7 +5,7 @@ const program = new Command();
 
 program
   .action(async () => {
-    const executorUrl = 'http://localhost:3000/jobs';
+    const executorUrl = 'http://localhost:3001/jobs';
 
     console.log(`Submitting job to executor at ${executorUrl}`);
 
