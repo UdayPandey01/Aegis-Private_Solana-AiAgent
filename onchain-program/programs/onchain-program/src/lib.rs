@@ -14,8 +14,6 @@ pub mod onchain_program {
         vault.sol_vault = ctx.accounts.sol_vault.key();
         vault.usdc_vault = ctx.accounts.usdc_vault.key();
         vault.bump = ctx.bumps.vault;
-        vault.sol_balance = 0;
-        vault.usdc_balance = 0;
 
         msg!("Trading Vault created for user {}", vault.owner);
         Ok(())
@@ -32,8 +30,8 @@ pub mod onchain_program {
             let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
             token::transfer(cpi_ctx, amount_sol)?;
             
-            ctx.accounts.vault.sol_balance = ctx.accounts.vault.sol_balance.checked_add(amount_sol).unwrap();
-            msg!("Deposited {} SOL. New balance: {}", amount_sol, ctx.accounts.vault.sol_balance);
+            ctx.accounts.sol_vault.reload()?;
+            msg!("Deposited {} SOL. New balance: {}", amount_sol, ctx.accounts.sol_vault.amount);
         }
 
         if amount_usdc > 0 {
@@ -46,8 +44,8 @@ pub mod onchain_program {
             let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
             token::transfer(cpi_ctx, amount_usdc)?;
 
-            ctx.accounts.vault.usdc_balance = ctx.accounts.vault.usdc_balance.checked_add(amount_usdc).unwrap();
-            msg!("Deposited {} USDC. New balance: {}", amount_usdc, ctx.accounts.vault.usdc_balance);
+            ctx.accounts.usdc_vault.reload()?;
+            msg!("Deposited {} USDC. New balance: {}", amount_usdc, ctx.accounts.usdc_vault.amount);
         }
         
         Ok(())
@@ -71,8 +69,8 @@ pub mod onchain_program {
             let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
             token::transfer(cpi_ctx, amount_sol)?;
 
-            ctx.accounts.vault.sol_balance = ctx.accounts.vault.sol_balance.checked_sub(amount_sol).unwrap();
-            msg!("Withdrew {} SOL. New balance: {}", amount_sol, ctx.accounts.vault.sol_balance);
+            ctx.accounts.sol_vault.reload()?;
+            msg!("Withdrew {} SOL. New balance: {}", amount_sol, ctx.accounts.sol_vault.amount);
         }
 
         if amount_usdc > 0 {
@@ -85,8 +83,8 @@ pub mod onchain_program {
             let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
             token::transfer(cpi_ctx, amount_usdc)?;
 
-            ctx.accounts.vault.usdc_balance = ctx.accounts.vault.usdc_balance.checked_sub(amount_usdc).unwrap();
-            msg!("Withdrew {} USDC. New balance: {}", amount_usdc, ctx.accounts.vault.usdc_balance);
+            ctx.accounts.usdc_vault.reload()?;
+            msg!("Withdrew {} USDC. New balance: {}", amount_usdc, ctx.accounts.usdc_vault.amount);
         }
 
         Ok(())
@@ -115,8 +113,6 @@ pub struct TradingVault {
     pub owner : Pubkey,
     pub sol_vault: Pubkey,
     pub usdc_vault: Pubkey,
-    pub sol_balance : u64,
-    pub usdc_balance : u64,
     pub bump : u8,
 }
 
