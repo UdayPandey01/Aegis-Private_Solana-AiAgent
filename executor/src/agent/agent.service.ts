@@ -20,10 +20,12 @@ export class AgentService  {
     'host'
   );
 
-  async runAgentAndVerify() : Promise<Buffer> {
+  async runAgentAndVerify(userParameters: { profitThreshold: number }) : Promise<Buffer> {
+    this.logger.log(`Invoking ZK agent with host: ${this.hostPath}`);
 
     try {
-      const {stdout} = await execFileSync(this.hostPath, [], { maxBuffer: 1024 * 1024 * 50 });
+      const args = [userParameters.profitThreshold.toString()];
+      const {stdout} = await execFileSync(this.hostPath, args, { maxBuffer: 1024 * 1024 * 50 });
 
       const receipt = JSON.parse(stdout);
       this.logger.log('Received receipt from ZK agent host.');
