@@ -12,6 +12,7 @@ import { Shield, ArrowUpDown, TrendingUp, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import axios from "axios"
+import { useWallet } from "@solana/wallet-adapter-react"
 
 const templates = [
   { id: "arbitrage", icon: ArrowUpDown, title: "Cross-DEX Arbitrage", description: "Exploit price differences across Solana DEXs instantly and privately.", features: ["Multi-DEX scanning", "Gas optimization", "MEV protection"] },
@@ -23,14 +24,22 @@ type Template = (typeof templates)[0];
 
 export default function MarketplacePage() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter()
+  const { publicKey } = useWallet();
 
   const handleLaunchAgent = async (params: any) => {
-    console.log("Launching agent:", selectedTemplate?.id, "with params:", params);
+    if (!publicKey) {
+        alert("Please connect your wallet first!");
+        return;
+    }
+
+    setIsSubmitting(true);
 
     const jobPayload = {
       jobId: Date.now(),
       agentType: selectedTemplate?.id,
+      userWalletAddress: publicKey.toBase58(),
       parameters: params,
     };
 
@@ -40,6 +49,8 @@ export default function MarketplacePage() {
     } catch (error) {
       console.error("Failed to launch agent:", error);
       alert("Failed to launch agent. Check the console for details.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -124,9 +135,9 @@ export default function MarketplacePage() {
                     </DialogHeader>
 
                     {/* --- Renders the correct form based on the selected template --- */}
-                    {selectedTemplate?.id === 'arbitrage' && <ArbitrageConfigForm onLaunch={handleLaunchAgent} />}
-                    {selectedTemplate?.id === 'stop-loss' && <StopLossConfigForm onLaunch={handleLaunchAgent} />}
-                    {selectedTemplate?.id === 'trend-follower' && <TrendFollowerConfigForm onLaunch={handleLaunchAgent} />}
+                    {selectedTemplate?.id === 'arbitrage' && <ArbitrageConfigForm onLaunch={handleLaunchAgent} isSubmitting={isSubmitting} />}
+                    {selectedTemplate?.id === 'stop-loss' && <StopLossConfigForm onLaunch={handleLaunchAgent} isSubmitting={isSubmitting} />}
+                    {selectedTemplate?.id === 'trend-follower' && <TrendFollowerConfigForm onLaunch={handleLaunchAgent} isSubmitting={isSubmitting} />}
 
                   </DialogContent>
                 </Dialog>
@@ -139,14 +150,12 @@ export default function MarketplacePage() {
   )
 }
 
-const ArbitrageConfigForm = ({ onLaunch }) => {
+const ArbitrageConfigForm = ({ onLaunch, isSubmitting }) => {
   const [selectedDexs, setSelectedDexs] = useState({ orca: true, raydium: true });
   const [assetPair, setAssetPair] = useState("sol-usdc");
   const [profitThreshold, setProfitThreshold] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = () => {
-    setIsSubmitting(true);
     onLaunch({
       dexs: Object.keys(selectedDexs).filter(k => selectedDexs[k]),
       assetPair,
@@ -189,7 +198,7 @@ const ArbitrageConfigForm = ({ onLaunch }) => {
   )
 }
 
-const StopLossConfigForm = ({ onLaunch }) => {
+const StopLossConfigForm = ({ onLaunch, isSubmitting }) => {
   const handleSubmit = () => { onLaunch({/* pass stop loss params */ }); }
   return (
     <div className="space-y-6 py-4 font-sans text-slate-400">
@@ -201,7 +210,7 @@ const StopLossConfigForm = ({ onLaunch }) => {
   );
 }
 
-const TrendFollowerConfigForm = ({ onLaunch }) => {
+const TrendFollowerConfigForm = ({ onLaunch, isSubmitting }) => {
   const handleSubmit = () => { onLaunch({/* pass trend follower params */ }); }
   return (
     <div className="space-y-6 py-4 font-sans text-slate-400">

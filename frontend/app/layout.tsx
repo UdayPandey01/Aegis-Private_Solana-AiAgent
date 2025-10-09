@@ -2,18 +2,19 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Syncopate, Share_Tech_Mono } from 'next/font/google';
+import { SolanaProvider } from '@/components/WalletContextProvider';
 
 const syncopate = Syncopate({
   subsets: ['latin'],
   weight: ['700'],
-  variable: '--font-syncopate', 
+  variable: '--font-syncopate',
   display: 'swap',
 });
 
 const shareTechMono = Share_Tech_Mono({
   subsets: ['latin'],
   weight: ['400'],
-  variable: '--font-share-tech-mono', 
+  variable: '--font-share-tech-mono',
   display: 'swap',
 });
 
@@ -36,7 +37,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SolanaProvider>
+            {children}
+          </SolanaProvider>
         </ThemeProvider>
       </body>
     </html>
