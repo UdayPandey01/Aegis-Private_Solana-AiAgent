@@ -39,6 +39,10 @@
     "@radix-ui/react-toggle": "^1.1.0",
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/wallet-adapter-wallets": "^0.19.37",
+    "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.58.0",
     "@tabler/icons-react": "^3.35.0",
     "@types/node": "20.6.2",
@@ -46,6 +50,7 @@
     "@types/react-dom": "18.2.7",
     "autoprefixer": "10.4.15",
     "axios": "^1.12.2",
+    "bs58": "^4.0.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -76,6 +81,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bs58": "^4.0.4",
     "@types/three": "^0.180.0"
   }
 }

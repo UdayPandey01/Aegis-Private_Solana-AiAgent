@@ -12,6 +12,8 @@ import {
   MobileNavMenu,
 } from "../../components/ui/resizeable-navbar";
 
+import { CustomWalletButton } from "../ui/CustomWalletButton";
+
 export function NavbarDemo() {
   const navItems = [
     { name: "Features", link: "#features" },
@@ -24,14 +26,13 @@ export function NavbarDemo() {
   return (
     <div className="relative w-full">
       <div className="fixed top-0 left-0 w-full z-50">
-        <Navbar>
-          {/* Desktop Navigation */}
+        <Navbar> 
           <NavBody>
             <NavbarLogo />
             <NavItems items={navItems} />
-            <div className="flex items-center gap-4">
+            <div className="relative z-50 flex items-center gap-4">
               <NavbarButton variant="secondary">Login</NavbarButton>
-              <NavbarButton variant="primary">Connect Wallet</NavbarButton>
+              <CustomWalletButton/>
             </div>
           </NavBody>
 
@@ -66,13 +67,7 @@ export function NavbarDemo() {
                 >
                   Login
                 </NavbarButton>
-                <NavbarButton
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  variant="primary"
-                  className="w-full"
-                >
-                  Book a call
-                </NavbarButton>
+                <CustomWalletButton/>
               </div>
             </MobileNavMenu>
           </MobileNav>
