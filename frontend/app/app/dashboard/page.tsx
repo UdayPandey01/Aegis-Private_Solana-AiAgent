@@ -5,39 +5,90 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Plus, Wallet, TrendingUp, Activity, MoreHorizontal, Circle, CheckCircle, AlertTriangle } from "lucide-react"
-import Link from "next/link"
+import axios from "axios"
+import { useWallet } from "@solana/wallet-adapter-react"
 
 type Agent = {
   id: number;
-  name: string;
-  template: string;
-  status: 'Monitoring' | 'Executing' | 'Success' | 'Failed';
-  pnl: number;
+  agentType: string;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  result: string | null;
+  createdAt: string;
 };
 
-const initialAgents: Agent[] = [
-  { id: 1759902676031, name: "My First Arbitrage Bot", template: "Cross-DEX Arbitrage", status: "Monitoring", pnl: 12.51 },
-];
-
 export default function DashboardPage() {
-  const [walletAddress] = useState("7xKX...9mP2")
+  const { publicKey } = useWallet();
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalBalance: 0,
+    totalPnl: 0,
+  });
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setAgents(initialAgents);
+    setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!publicKey) {
+        setAgents([]);
+        setStats({ totalBalance: 0, totalPnl: 0 });
+        setIsLoading(false);
+        return;
+      };
+
+      setIsLoading(true);
+      try {
+        const response = await axios.get(`http://localhost:3001/jobs?walletAddress=${publicKey.toBase58()}`);
+        const userJobs: Agent[] = response.data;
+        setAgents(userJobs);
+
+        const totalPnl = userJobs.reduce((acc, job) => {
+            if (job.result && job.result.includes("+$")) {
+                const pnlValue = parseFloat(job.result.split("+$")[1]);
+                if (!isNaN(pnlValue)) {
+                    return acc + pnlValue;
+                }
+            }
+            return acc;
+        }, 0);
+        
+        setStats({
+          totalBalance: 12450.00, 
+          totalPnl: totalPnl,
+        });
+
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isMounted) {
+      fetchData();
+    }
+  }, [publicKey, isMounted]);
+
+  const walletAddress = publicKey ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}` : "Not Connected";
+
+  if (!isMounted) {
+    return null; 
+  }
 
   return (
     <div className="min-h-screen bg-black text-slate-50">
       <header className="sticky top-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
+            <a href="/" className="flex items-center space-x-2">
               <Shield className="h-6 w-6 text-white" />
               <span className="font-heading text-xl font-bold text-white">
                 AEGIS
               </span>
-            </Link>
+            </a>
             <div className="flex items-center space-x-4">
               <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-md bg-neutral-900 border border-white/10">
                 <Wallet className="h-4 w-4 text-white" />
@@ -61,16 +112,16 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard
-            title="Total Balance"
-            value="$12,450.00"
-            description="SOL: 52.3 | USDC: 8,234"
+            title="Total Vault Balance"
+            value={`$${stats.totalBalance.toFixed(2)}`}
+            description="Combined value of all assets"
             icon={Wallet}
             delay={0.1}
           />
           <StatCard
             title="Total P/L"
-            value="+$1,234.56"
-            description="+10.4% this week"
+            value={`${stats.totalPnl >= 0 ? '+' : ''}$${stats.totalPnl.toFixed(2)}`}
+            description="All-time agent performance"
             icon={TrendingUp}
             delay={0.2}
           />
@@ -92,15 +143,17 @@ export default function DashboardPage() {
             <div className="p-6 flex flex-row items-center justify-between">
               <h2 className="font-heading text-xl font-bold text-slate-50">My Active Agents</h2>
               <Button asChild variant="outline" className="font-sans bg-transparent border-white/20 hover:bg-white/10 hover:text-white">
-                <Link href="/app/marketplace">
+                <a href="/app/marketplace">
                   <Plus className="h-4 w-4 mr-2" />
                   Launch New Agent
-                </Link>
+                </a>
               </Button>
             </div>
 
             <div className="border-t border-white/10">
-              {agents.length > 0 ? (
+              {isLoading ? (
+                <div className="p-6 text-center text-slate-400">Loading agents...</div>
+              ) : agents.length > 0 ? (
                 <div className="divide-y divide-white/10">
                   {agents.map(agent => (
                     <AgentRow key={agent.id} agent={agent} />
@@ -114,10 +167,10 @@ export default function DashboardPage() {
                     </div>
                     <h3 className="font-heading text-xl font-bold mb-2 text-slate-50">No Active Agents</h3>
                     <p className="font-sans text-slate-400 mb-6 max-w-sm">
-                      You haven't launched any trading agents yet. Explore our marketplace to find the perfect strategy.
+                      You haven't launched any trading agents yet. Explore the marketplace to find a strategy.
                     </p>
                     <Button asChild size="lg" className="font-sans bg-white text-black hover:bg-slate-200">
-                      <Link href="/app/marketplace">Browse Agent Templates</Link>
+                      <a href="/app/marketplace">Browse Agent Templates</a>
                     </Button>
                   </div>
                 </div>
@@ -131,7 +184,7 @@ export default function DashboardPage() {
 }
 
 const StatCard = ({ title, value, description, icon: Icon, delay }) => (
-  <motion.div
+    <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay }}
@@ -151,13 +204,28 @@ const StatCard = ({ title, value, description, icon: Icon, delay }) => (
 
 const AgentRow = ({ agent }: { agent: Agent }) => {
   const getStatusIcon = (status: Agent['status']) => {
-    switch (status) {
-      case 'Monitoring': return <Circle className="h-4 w-4 text-blue-500" />;
-      case 'Executing': return <Activity className="h-4 w-4 text-yellow-500 animate-pulse" />;
-      case 'Success': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'Failed': return <AlertTriangle className="h-4 w-4 text-red-500" />;
+    switch(status?.toUpperCase()) {
+      case 'MONITORING':
+      case 'PENDING':
+      case 'PROCESSING':
+        return <Circle className="h-4 w-4 text-blue-500 animate-pulse" />;
+      case 'COMPLETED':
+      case 'SUCCESS':
+         return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'FAILED': return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      default: return <Circle className="h-4 w-4 text-slate-500" />;
     }
   }
+
+  const getPnl = (result: string | null) => {
+    if (result && result.includes("+$")) {
+      const pnlValue = parseFloat(result.split("+$")[1]);
+      return isNaN(pnlValue) ? 0 : pnlValue;
+    }
+    return 0;
+  }
+
+  const pnl = getPnl(agent.result);
 
   return (
     <div className="grid grid-cols-12 gap-4 items-center p-4 hover:bg-white/5 transition-colors">
@@ -165,18 +233,18 @@ const AgentRow = ({ agent }: { agent: Agent }) => {
         {getStatusIcon(agent.status)}
       </div>
       <div className="col-span-4">
-        <p className="font-bold text-slate-50">{agent.name}</p>
-        <p className="text-xs text-slate-400">{agent.template}</p>
+        <p className="font-bold text-slate-50">{agent.agentType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+        <p className="text-xs text-slate-400">ID: {agent.id}</p>
       </div>
       <div className="col-span-3 text-slate-400 text-sm">
         {agent.status}
       </div>
-      <div className={`col-span-2 font-mono text-sm ${agent.pnl > 0 ? 'text-green-500' : 'text-red-500'}`}>
-        {agent.pnl > 0 ? `+${agent.pnl.toFixed(2)}` : `${agent.pnl.toFixed(2)}`} USDC
+      <div className={`col-span-2 font-mono text-sm ${pnl > 0 ? 'text-green-500' : 'text-slate-400'}`}>
+        {pnl > 0 ? `+${pnl.toFixed(2)}` : `0.00`} USDC
       </div>
       <div className="col-span-2 flex justify-end">
-        <Button variant="ghost" size="icon">
-          <MoreHorizontal className="h-4 w-4 text-slate-400" />
+         <Button variant="ghost" size="icon">
+            <MoreHorizontal className="h-4 w-4 text-slate-400" />
         </Button>
       </div>
     </div>

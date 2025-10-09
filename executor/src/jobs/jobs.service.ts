@@ -13,13 +13,13 @@ export class JobsService {
         private readonly agentService: AgentService,
         private readonly solanaService: SolanaService,
         private readonly relayerService: RelayerService,
-    ) {}
+    ) { }
 
     async processJob(jobId: number, userWalletAddress: string): Promise<void> {
         this.logger.log(`Processing job #${jobId} for user ${userWalletAddress}...`);
 
         const job = await this.prisma.job.create({
-            data : {
+            data: {
                 jobId: jobId,
                 agentType: 'arbitrage',
                 status: 'PROCESSING',
@@ -35,7 +35,7 @@ export class JobsService {
         try {
             const journal = await this.agentService.runAgentAndVerify();
 
-            if(journal.length > 0){
+            if (journal.length > 0) {
                 const signedTx = await this.solanaService.buildExecuteJobTx(jobId, journal);
                 const txSignature = await this.relayerService.submitBundle(signedTx);
 
@@ -45,14 +45,14 @@ export class JobsService {
                 })
 
                 this.logger.log(`Job #${jobId} completed successfully!`);
-            }else {
+            } else {
                 await this.prisma.job.update({
                     where: { id: job.id },
                     data: { status: 'COMPLETED', result: 'No profitable opportunity found.' },
                 });
                 this.logger.log(`Job #${jobId} completed. No action taken.`);
             }
-            
+
         } catch (error) {
             this.logger.error(`Job #${jobId} failed:`, error);
             await this.prisma.job.update({
@@ -61,4 +61,19 @@ export class JobsService {
             });
         }
     }
+
+    async getJobsForUser(userWalletAddress: string) {
+        this.logger.log(`Fetching jobs for user: ${userWalletAddress}`);
+
+        const jobs = await this.prisma.job.findMany({
+            where: { userWalletAddress },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        return jobs.map(job => ({
+            ...job,
+            jobId: job.jobId.toString(),
+        }));
+    }
+
 }
