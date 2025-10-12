@@ -12,7 +12,7 @@ onchain_program = "D3jAcqXfbzCFWK69m4ysWKEtTowuSFf3b33dAJo3k8DW"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "http://127.0.0.1:8890"
+cluster = "Devnet"
 wallet = "~/.config/solana/id.json"
 timeout = "120s"
 
