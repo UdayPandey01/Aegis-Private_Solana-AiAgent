@@ -6,17 +6,21 @@ import { JobsModule } from './jobs/jobs.module';
 import { PrismaService } from './prisma.service';
 import { PrismaModule } from './prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { SSEModule } from './sse/sse.module';
+import { PriceModule } from './price/price.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), 
-    AgentModule, 
-    SolanaModule, 
+    ConfigModule.forRoot({ isGlobal: true }),
+    AgentModule,
+    SolanaModule,
     JobsModule,
     PrismaModule,
-    AuthModule
+    AuthModule,
+    SSEModule,
+    PriceModule
   ],
-  providers : [PrismaService],
-  exports : [PrismaService]
+  providers: [PrismaService],
+  exports: [PrismaService]
 })
-export class AppModule {}
+export class AppModule { }
