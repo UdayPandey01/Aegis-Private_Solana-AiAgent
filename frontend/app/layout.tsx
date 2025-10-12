@@ -6,14 +6,14 @@ import { SolanaProvider } from '@/components/WalletContextProvider';
 
 const syncopate = Syncopate({
   subsets: ['latin'],
-  weight: ['700'],
+  weight: ['400', '700'],
   variable: '--font-syncopate',
   display: 'swap',
 });
 
 const shareTechMono = Share_Tech_Mono({
   subsets: ['latin'],
-  weight: ['400'],
+  weight: '400',
   variable: '--font-share-tech-mono',
   display: 'swap',
 });

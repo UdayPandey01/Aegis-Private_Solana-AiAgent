@@ -44,7 +44,7 @@ export function FeatureGridSection() {
 
   return (
     <section id="how-it-works" ref={ref} className="py-24 relative bg-black">
-       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -72,11 +72,11 @@ export function FeatureGridSection() {
               className="relative p-8 overflow-hidden rounded-xl border border-white/10 bg-neutral-900/50"
             >
               <div className="flex items-start gap-4">
-                  <feature.icon className="h-7 w-7 text-white flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-heading text-xl font-semibold mb-2 text-slate-50">{feature.title}</h3>
-                    <p className="font-sans text-slate-400">{feature.description}</p>
-                  </div>
+                <feature.icon className="h-7 w-7 text-white flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-heading text-xl font-bold mb-2 text-slate-50">{feature.title}</h3>
+                  <p className="font-sans text-slate-400">{feature.description}</p>
+                </div>
               </div>
             </motion.div>
           ))}

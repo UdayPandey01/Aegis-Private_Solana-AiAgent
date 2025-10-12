@@ -6,7 +6,6 @@ import {
   NavItems,
   MobileNav,
   NavbarLogo,
-  NavbarButton,
   MobileNavHeader,
   MobileNavToggle,
   MobileNavMenu,
@@ -16,9 +15,9 @@ import { CustomWalletButton } from "../ui/CustomWalletButton";
 
 export function NavbarDemo() {
   const navItems = [
-    { name: "Features", link: "#features" },
-    { name: "Pricing", link: "#pricing" },
-    { name: "Contact", link: "#contact" },
+    { name: "Problem", link: "#problem" },
+    { name: "Solution", link: "#solution" },
+    { name: "Agents", link: "#agents" },
   ];
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -26,13 +25,12 @@ export function NavbarDemo() {
   return (
     <div className="relative w-full">
       <div className="fixed top-0 left-0 w-full z-50">
-        <Navbar> 
+        <Navbar>
           <NavBody>
             <NavbarLogo />
             <NavItems items={navItems} />
             <div className="relative z-50 flex items-center gap-4">
-              <NavbarButton variant="secondary">Login</NavbarButton>
-              <CustomWalletButton/>
+              <CustomWalletButton />
             </div>
           </NavBody>
 
@@ -60,14 +58,7 @@ export function NavbarDemo() {
                 </a>
               ))}
               <div className="flex w-full flex-col gap-4">
-                <NavbarButton
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  variant="primary"
-                  className="w-full"
-                >
-                  Login
-                </NavbarButton>
-                <CustomWalletButton/>
+                <CustomWalletButton />
               </div>
             </MobileNavMenu>
           </MobileNav>

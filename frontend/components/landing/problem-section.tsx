@@ -41,20 +41,20 @@ export function ProblemSection() {
   }, [scrollYProgress, activeIndex]);
 
   return (
-    <section ref={targetRef} className="relative bg-black text-white" style={{ height: `${problems.length * 100 + 50}vh` }}>
+    <section id="problem" ref={targetRef} className="relative bg-black text-white" style={{ height: `${problems.length * 100 + 50}vh` }}>
       <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
-        
+
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div className="h-full flex flex-col justify-center">
-              <motion.h2 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="font-heading text-4xl sm:text-5xl font-bold mb-6 text-slate-50"
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="font-heading text-4xl sm:text-5xl font-bold mb-6 text-slate-50"
               >
-                The Flaw in <br/> Public Trading
+                The Flaw in <br /> Public Trading
               </motion.h2>
               <div className="space-y-8 mt-8">
                 {problems.map((problem, index) => (
@@ -66,7 +66,7 @@ export function ProblemSection() {
                     <div className="flex items-start gap-4">
                       <problem.icon className="h-7 w-7 flex-shrink-0 text-white mt-1" />
                       <div>
-                        <h3 className="font-heading text-2xl font-semibold text-slate-50">{problem.title}</h3>
+                        <h3 className="font-heading text-2xl font-bold text-slate-50">{problem.title}</h3>
                         <p className="font-sans text-slate-400 mt-2 ml-0 leading-relaxed">
                           {problem.description}
                         </p>

@@ -59,7 +59,7 @@ const Marquee = ({ children, direction = 1 }) => {
       <motion.div
         className="flex"
         animate={{ x: direction === 1 ? ["0%", "-100%"] : ["-100%", "0%"] }}
-        transition={{ ease: "linear", duration: 50, repeat: Infinity }}
+        transition={{ ease: "linear", duration: 80, repeat: Infinity }}
       >
         {children}
       </motion.div>
@@ -72,7 +72,7 @@ export function AgentsSection() {
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 
   return (
-    <section id="features" ref={ref} className="py-24 relative overflow-hidden bg-black">
+    <section id="agents" ref={ref} className="py-24 relative overflow-hidden bg-black">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -88,7 +88,7 @@ export function AgentsSection() {
           </p>
         </motion.div>
       </div>
-      
+
       <div className="flex flex-col gap-4 py-8">
         <Marquee direction={1}>
           {[...agents, ...agents].map((agent, index) => (
@@ -124,16 +124,16 @@ const AgentCard = ({ agent }) => {
           <agent.icon className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h3 className="font-heading text-xl font-semibold text-slate-50">{agent.title}</h3>
+          <h3 className="font-heading text-xl font-bold text-slate-50">{agent.title}</h3>
           <p className="font-sans text-sm text-slate-400">{agent.description}</p>
         </div>
       </div>
       <div className="flex flex-wrap gap-2 mt-auto">
-          {agent.features.map(feature => (
-              <span key={feature} className="font-sans text-xs text-slate-300 bg-white/5 px-2 py-1 rounded-full border border-white/10">
-                  {feature}
-              </span>
-          ))}
+        {agent.features.map(feature => (
+          <span key={feature} className="font-sans text-xs text-slate-300 bg-white/5 px-2 py-1 rounded-full border border-white/10">
+            {feature}
+          </span>
+        ))}
       </div>
     </Card>
   );

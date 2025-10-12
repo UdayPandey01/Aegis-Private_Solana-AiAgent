@@ -12,7 +12,6 @@ export default function Home() {
       <NavbarDemo />
       <Hero />
       <ProblemSection />
-      {/* <SolutionSection /> */}
       <FeatureGridSection />
       <AgentsSection />
       <Footer />

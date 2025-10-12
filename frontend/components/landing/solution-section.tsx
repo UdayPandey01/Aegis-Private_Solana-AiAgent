@@ -4,20 +4,19 @@ import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
 import { Lock, Cpu, Shield, CheckCircle } from "lucide-react";
-import { FloatingNodes } from "../ui/FloatingNodes";
 
 const features = [
   {
     icon: Lock,
     title: "Confidential Compute",
     description: "Your logic runs privately in a zkVM. No one sees your strategy, inputs, or state.",
-    className: "md:col-span-2", 
+    className: "md:col-span-2",
   },
   {
     icon: Cpu,
     title: "ZK Proof Generation",
     description: "A cryptographic proof is generated, confirming your logic executed correctly without revealing it.",
-    className: "md:col-span-1", 
+    className: "md:col-span-1",
   },
   {
     icon: Shield,
@@ -44,20 +43,16 @@ export function FeatureGridSection() {
 
   const itemVariants = {
     hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: { 
-      opacity: 1, 
-      scale: 1, 
+    visible: {
+      opacity: 1,
+      scale: 1,
       y: 0,
-      transition: { duration: 0.7, ease: [0.25, 1, 0.5, 1] } 
+      transition: { duration: 0.7, ease: [0.25, 1, 0.5, 1] }
     },
   };
 
   return (
-    <section id="how-it-works" ref={ref} className="py-24 relative bg-black overflow-hidden">
-      <div className="absolute inset-0 z-0 opacity-20">
-        <FloatingNodes />
-      </div>
-
+    <section id="solution" ref={ref} className="py-24 relative bg-black overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -86,11 +81,11 @@ export function FeatureGridSection() {
               className={`relative p-8 overflow-hidden rounded-xl border border-white/10 bg-neutral-900/50 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-neutral-900 ${feature.className}`}
             >
               <div className="flex items-start gap-4">
-                  <feature.icon className="h-6 w-6 text-white flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-heading text-xl font-semibold mb-2 text-slate-50">{feature.title}</h3>
-                    <p className="font-sans text-base text-slate-400">{feature.description}</p>
-                  </div>
+                <feature.icon className="h-6 w-6 text-white flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-heading text-xl font-bold mb-2 text-slate-50">{feature.title}</h3>
+                  <p className="font-sans text-base text-slate-400">{feature.description}</p>
+                </div>
               </div>
             </motion.div>
           ))}
