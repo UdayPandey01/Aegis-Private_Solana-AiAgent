@@ -1,56 +1,32 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Wallet } from "lucide-react"
 import { useRouter } from "next/navigation"
-
-const wallets = [
-  { name: "Phantom", icon: "👻" },
-  { name: "Solflare", icon: "☀️" },
-  { name: "Backpack", icon: "🎒" },
-]
+import { useWallet } from "@solana/wallet-adapter-react"
+import { useWalletModal } from "@solana/wallet-adapter-react-ui"
 
 export default function AppPage() {
-  const [isConnecting, setIsConnecting] = useState(false)
   const router = useRouter()
+  const { connected, connecting } = useWallet()
+  const { setVisible } = useWalletModal()
 
-  const handleConnect = async (walletName: string) => {
-    setIsConnecting(true)
-    setTimeout(() => {
+  useEffect(() => {
+    if (connected) {
       router.push("/app/dashboard")
-    }, 1500)
+    }
+  }, [connected, router])
+
+  const handleConnect = () => {
+    setVisible(true)
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-violet-500/10 to-background" />
-
-      <div className="absolute inset-0">
-        {Array.from({ length: 30 }).map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-cyan-400 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0, 1, 0],
-              scale: [0, 1.5, 0],
-            }}
-            transition={{
-              duration: 10 + Math.random() * 20,
-              delay: Math.random() * 5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -71,18 +47,14 @@ export default function AppPage() {
             </div>
 
             <div className="space-y-3">
-              {wallets.map((wallet) => (
-                <Button
-                  key={wallet.name}
-                  onClick={() => handleConnect(wallet.name)}
-                  disabled={isConnecting}
-                  className="w-full h-16 text-lg glass hover:bg-cyan-500/10 hover:border-cyan-500/40 border border-white/10 justify-start"
-                  variant="outline"
-                >
-                  <span className="text-2xl mr-3">{wallet.icon}</span>
-                  {wallet.name}
-                </Button>
-              ))}
+              <Button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="w-full h-16 text-lg bg-cyan-500 hover:bg-cyan-600 border-cyan-500/40 border text-white font-semibold"
+              >
+                <Wallet className="h-5 w-5 mr-3" />
+                {connecting ? "Connecting..." : "Select Wallet"}
+              </Button>
             </div>
 
             <div className="mt-6 text-center">

@@ -20,19 +20,19 @@ interface SolanaProviderProps {
 export const SolanaProvider: FC<SolanaProviderProps> = ({ children }) => {
   const network = WalletAdapterNetwork.Devnet;
 
-  const endpoint = useMemo(() => process.env.NEXT_PUBLIC_SOLANA_RPC_URL!, [network]);
+  const endpoint = useMemo(() => process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com", [network]);
 
   const wallets = useMemo(
     () => [
-        new PhantomWalletAdapter(),
-        new SolflareWalletAdapter(),
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
     ],
-    [network]
+    []
   );
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets} autoConnect={true}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
