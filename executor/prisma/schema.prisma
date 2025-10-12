@@ -18,6 +18,8 @@ model User {
   id String @id @default(uuid())
   walletAddress String @unique
   createdAt DateTime @default(now())
+  totalPnL Float @default(0)
+  tradesExecuted Int @default(0)
   jobs      Job[]
 }
 
@@ -27,6 +29,7 @@ model Job {
   status      String   @default("PENDING")
   agentType   String
   result      String? 
+  parameters  String?  @default("{\"profitThreshold\":0.5}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
