@@ -34,3 +34,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# copied IDL and types (from executor and onchain-program)
+/src/idl/
+/src/types/
