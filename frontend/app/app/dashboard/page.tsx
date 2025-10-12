@@ -4,14 +4,16 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Plus, Wallet, TrendingUp, Activity, MoreHorizontal, Circle, CheckCircle, AlertTriangle } from "lucide-react"
+import { Shield, Plus, Wallet, TrendingUp, Activity, MoreHorizontal, Circle, CheckCircle, AlertTriangle, Trash2 } from "lucide-react"
+import Link from "next/link"
 import axios from "axios"
 import { useWallet } from "@solana/wallet-adapter-react"
+import { useVaultBalance } from "@/hooks/useVaultBalance"
 
 type Agent = {
   id: number;
   agentType: string;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'RUNNING' | 'PAUSED';
   result: string | null;
   createdAt: string;
 };
@@ -25,10 +27,35 @@ export default function DashboardPage() {
     totalPnl: 0,
   });
   const [isMounted, setIsMounted] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const { balance: vaultBalance, isLoading: vaultLoading } = useVaultBalance();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.closest('.dropdown-menu') || target.closest('.dropdown-toggle')) {
+        return;
+      }
+      if (openDropdown !== null) {
+        setOpenDropdown(null);
+      }
+    };
+
+    if (openDropdown !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdown]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,24 +66,34 @@ export default function DashboardPage() {
         return;
       };
 
-      setIsLoading(true);
       try {
         const response = await axios.get(`http://localhost:3001/jobs?walletAddress=${publicKey.toBase58()}`);
         const userJobs: Agent[] = response.data;
-        setAgents(userJobs);
+        console.log(`Fetched ${userJobs.length} agents for dashboard`);
+
+        setAgents(prev => {
+          const hasChanged = JSON.stringify(prev) !== JSON.stringify(userJobs);
+          return hasChanged ? userJobs : prev;
+        });
 
         const totalPnl = userJobs.reduce((acc, job) => {
-            if (job.result && job.result.includes("+$")) {
-                const pnlValue = parseFloat(job.result.split("+$")[1]);
-                if (!isNaN(pnlValue)) {
-                    return acc + pnlValue;
-                }
+          console.log("Processing job result:", job.result);
+          if (job.result && job.status === 'COMPLETED') {
+            if (job.result.length > 50) {
+              console.log("Job completed with transaction, P&L = 0 (no real P&L data yet)");
+              return acc + 0;
+            } else {
+              console.log("Job completed with no profit");
+              return acc + 0;
             }
-            return acc;
+          }
+          return acc;
         }, 0);
-        
+
+        console.log("Total P&L calculated:", totalPnl);
+
         setStats({
-          totalBalance: 12450.00, 
+          totalBalance: vaultBalance.totalValueUSD,
           totalPnl: totalPnl,
         });
 
@@ -69,13 +106,43 @@ export default function DashboardPage() {
 
     if (isMounted) {
       fetchData();
+
+      const refreshInterval = setInterval(() => {
+        if (publicKey && document.visibilityState === 'visible') {
+          console.log('Auto-refreshing dashboard data...');
+          fetchData();
+        }
+      }, 30000);
+
+      return () => clearInterval(refreshInterval);
     }
-  }, [publicKey, isMounted]);
+  }, [publicKey, isMounted, vaultBalance.totalValueUSD]);
 
   const walletAddress = publicKey ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}` : "Not Connected";
 
+  const handleDeleteAgent = async (agentId: number) => {
+    if (!publicKey) return;
+
+    setIsDeleting(true);
+    try {
+      await axios.delete(`http://localhost:3001/jobs/${agentId}?walletAddress=${publicKey.toBase58()}`);
+
+      setAgents(prev => prev.filter(agent => agent.id !== agentId));
+
+      setDeleteConfirm(null);
+      setOpenDropdown(null);
+
+      console.log(`Agent ${agentId} deleted successfully`);
+    } catch (error) {
+      console.error('Failed to delete agent:', error);
+      alert('Failed to delete agent. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!isMounted) {
-    return null; 
+    return null;
   }
 
   return (
@@ -156,7 +223,16 @@ export default function DashboardPage() {
               ) : agents.length > 0 ? (
                 <div className="divide-y divide-white/10">
                   {agents.map(agent => (
-                    <AgentRow key={agent.id} agent={agent} />
+                    <AgentRow
+                      key={agent.id}
+                      agent={agent}
+                      openDropdown={openDropdown}
+                      setOpenDropdown={setOpenDropdown}
+                      deleteConfirm={deleteConfirm}
+                      setDeleteConfirm={setDeleteConfirm}
+                      onDelete={handleDeleteAgent}
+                      isDeleting={isDeleting}
+                    />
                   ))}
                 </div>
               ) : (
@@ -167,7 +243,7 @@ export default function DashboardPage() {
                     </div>
                     <h3 className="font-heading text-xl font-bold mb-2 text-slate-50">No Active Agents</h3>
                     <p className="font-sans text-slate-400 mb-6 max-w-sm">
-                      You haven't launched any trading agents yet. Explore the marketplace to find a strategy.
+                      You haven&apos;t launched any trading agents yet. Explore the marketplace to find a strategy.
                     </p>
                     <Button asChild size="lg" className="font-sans bg-white text-black hover:bg-slate-200">
                       <a href="/app/marketplace">Browse Agent Templates</a>
@@ -183,8 +259,14 @@ export default function DashboardPage() {
   )
 }
 
-const StatCard = ({ title, value, description, icon: Icon, delay }) => (
-    <motion.div
+const StatCard = ({ title, value, description, icon: Icon, delay }: {
+  title: string;
+  value: string;
+  description: string;
+  icon: any;
+  delay: number;
+}) => (
+  <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay }}
@@ -202,18 +284,39 @@ const StatCard = ({ title, value, description, icon: Icon, delay }) => (
   </motion.div>
 );
 
-const AgentRow = ({ agent }: { agent: Agent }) => {
+const AgentRow = ({
+  agent,
+  openDropdown,
+  setOpenDropdown,
+  deleteConfirm,
+  setDeleteConfirm,
+  onDelete,
+  isDeleting
+}: {
+  agent: Agent;
+  openDropdown: number | null;
+  setOpenDropdown: (id: number | null) => void;
+  deleteConfirm: number | null;
+  setDeleteConfirm: (id: number | null) => void;
+  onDelete: (id: number) => void;
+  isDeleting: boolean;
+}) => {
   const getStatusIcon = (status: Agent['status']) => {
-    switch(status?.toUpperCase()) {
+    switch (status?.toUpperCase()) {
+      case 'RUNNING':
       case 'MONITORING':
       case 'PENDING':
       case 'PROCESSING':
         return <Circle className="h-4 w-4 text-blue-500 animate-pulse" />;
       case 'COMPLETED':
       case 'SUCCESS':
-         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'FAILED': return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      default: return <Circle className="h-4 w-4 text-slate-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'PAUSED':
+        return <Circle className="h-4 w-4 text-yellow-500" />;
+      case 'FAILED':
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      default:
+        return <Circle className="h-4 w-4 text-slate-500" />;
     }
   }
 
@@ -228,25 +331,87 @@ const AgentRow = ({ agent }: { agent: Agent }) => {
   const pnl = getPnl(agent.result);
 
   return (
-    <div className="grid grid-cols-12 gap-4 items-center p-4 hover:bg-white/5 transition-colors">
-      <div className="col-span-1 flex items-center justify-center">
-        {getStatusIcon(agent.status)}
-      </div>
-      <div className="col-span-4">
-        <p className="font-bold text-slate-50">{agent.agentType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
-        <p className="text-xs text-slate-400">ID: {agent.id}</p>
-      </div>
-      <div className="col-span-3 text-slate-400 text-sm">
-        {agent.status}
-      </div>
-      <div className={`col-span-2 font-mono text-sm ${pnl > 0 ? 'text-green-500' : 'text-slate-400'}`}>
-        {pnl > 0 ? `+${pnl.toFixed(2)}` : `0.00`} USDC
-      </div>
-      <div className="col-span-2 flex justify-end">
-         <Button variant="ghost" size="icon">
+    <div className="relative">
+      <div className="grid grid-cols-12 gap-4 items-center p-4 hover:bg-white/5 transition-colors">
+        <Link href={`/app/agent/demo?id=${agent.id}`} className="col-span-10 grid grid-cols-10 gap-4 items-center cursor-pointer">
+          <div className="col-span-1 flex items-center justify-center">
+            {getStatusIcon(agent.status)}
+          </div>
+          <div className="col-span-4">
+            <p className="font-bold text-slate-50">{agent.agentType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+            <p className="text-xs text-slate-400">ID: {agent.id}</p>
+          </div>
+          <div className="col-span-3 text-slate-400 text-sm">
+            {agent.status}
+          </div>
+          <div className={`col-span-2 font-mono text-sm ${pnl > 0 ? 'text-green-500' : 'text-slate-400'}`}>
+            {pnl > 0 ? `+${pnl.toFixed(2)}` : `0.00`} USDC
+          </div>
+        </Link>
+        <div className="col-span-2 flex justify-end">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="dropdown-toggle"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOpenDropdown(openDropdown === agent.id ? null : agent.id);
+            }}
+          >
             <MoreHorizontal className="h-4 w-4 text-slate-400" />
-        </Button>
+          </Button>
+        </div>
       </div>
-    </div>
+
+      {
+        openDropdown === agent.id && (
+          <div className="dropdown-menu absolute right-4 top-12 z-50 bg-neutral-800 border border-white/20 rounded-lg shadow-lg py-1 min-w-[160px]">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setDeleteConfirm(agent.id);
+                setOpenDropdown(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Agent
+            </button>
+          </div>
+        )
+      }
+
+      {
+        deleteConfirm === agent.id && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-neutral-900 border border-white/20 rounded-lg p-6 max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-slate-50 mb-2">Delete Agent</h3>
+              <p className="text-slate-400 mb-6">
+                Are you sure you want to delete this agent? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={isDeleting}
+                  className="border-white/20 hover:bg-white/10"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => onDelete(agent.id)}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   );
 }

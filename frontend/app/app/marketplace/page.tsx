@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -26,12 +25,14 @@ export default function MarketplacePage() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter()
-  const { publicKey } = useWallet();
+  const { publicKey, connected } = useWallet();
 
   const handleLaunchAgent = async (params: any) => {
-    if (!publicKey) {
-        alert("Please connect your wallet first!");
-        return;
+    console.log('Launch agent clicked - Wallet status:', { publicKey: publicKey?.toBase58(), connected });
+
+    if (!publicKey || !connected) {
+      alert("Please connect your wallet first! Go to the header and click 'Select Wallet'.");
+      return;
     }
 
     setIsSubmitting(true);
@@ -44,7 +45,7 @@ export default function MarketplacePage() {
     };
 
     try {
-      await axios.post('http://localhost:3001/jobs', jobPayload);
+      await axios.post('http://localhost:3001/jobs/start-continuous', jobPayload);
       router.push("/app/dashboard");
     } catch (error) {
       console.error("Failed to launch agent:", error);
@@ -73,29 +74,27 @@ export default function MarketplacePage() {
                 </span>
               </Link>
             </div>
-            <div className="justify-self-end" />
+            <div className="justify-self-end">
+              {connected && publicKey && (
+                <span className="text-xs text-green-400">
+                  ✓ {publicKey.toBase58().slice(0, 4)}...{publicKey.toBase58().slice(-4)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-12 text-center"
-        >
+        <div className="mb-12 text-center">
           <h1 className="font-heading text-4xl sm:text-5xl font-bold mb-2 text-slate-50">Agent Marketplace</h1>
           <p className="font-sans text-slate-400 max-w-2xl mx-auto">Choose a template to launch your autonomous trading agent.</p>
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {templates.map((template, index) => (
-            <motion.div
+          {templates.map((template) => (
+            <div
               key={template.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.05 }}
               className="bg-neutral-900 border border-white/10 rounded-2xl h-full p-8 flex flex-col transition-colors hover:border-white/20"
             >
               <div>
@@ -134,7 +133,6 @@ export default function MarketplacePage() {
                       </DialogDescription>
                     </DialogHeader>
 
-                    {/* --- Renders the correct form based on the selected template --- */}
                     {selectedTemplate?.id === 'arbitrage' && <ArbitrageConfigForm onLaunch={handleLaunchAgent} isSubmitting={isSubmitting} />}
                     {selectedTemplate?.id === 'stop-loss' && <StopLossConfigForm onLaunch={handleLaunchAgent} isSubmitting={isSubmitting} />}
                     {selectedTemplate?.id === 'trend-follower' && <TrendFollowerConfigForm onLaunch={handleLaunchAgent} isSubmitting={isSubmitting} />}
@@ -142,7 +140,7 @@ export default function MarketplacePage() {
                   </DialogContent>
                 </Dialog>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </main>
@@ -150,14 +148,14 @@ export default function MarketplacePage() {
   )
 }
 
-const ArbitrageConfigForm = ({ onLaunch, isSubmitting }) => {
+const ArbitrageConfigForm = ({ onLaunch, isSubmitting }: { onLaunch: (params: any) => void; isSubmitting: boolean }) => {
   const [selectedDexs, setSelectedDexs] = useState({ orca: true, raydium: true });
   const [assetPair, setAssetPair] = useState("sol-usdc");
   const [profitThreshold, setProfitThreshold] = useState("");
 
   const handleSubmit = () => {
     onLaunch({
-      dexs: Object.keys(selectedDexs).filter(k => selectedDexs[k]),
+      dexs: Object.keys(selectedDexs).filter(k => selectedDexs[k as keyof typeof selectedDexs]),
       assetPair,
       profitThreshold: parseFloat(profitThreshold)
     });
@@ -198,8 +196,8 @@ const ArbitrageConfigForm = ({ onLaunch, isSubmitting }) => {
   )
 }
 
-const StopLossConfigForm = ({ onLaunch, isSubmitting }) => {
-  const handleSubmit = () => { onLaunch({/* pass stop loss params */ }); }
+const StopLossConfigForm = ({ onLaunch, isSubmitting }: { onLaunch: (params: any) => void; isSubmitting: boolean }) => {
+  const handleSubmit = () => { onLaunch({}); }
   return (
     <div className="space-y-6 py-4 font-sans text-slate-400">
       <p>Configuration for the Stop-Loss Agent is coming soon...</p>
@@ -210,8 +208,8 @@ const StopLossConfigForm = ({ onLaunch, isSubmitting }) => {
   );
 }
 
-const TrendFollowerConfigForm = ({ onLaunch, isSubmitting }) => {
-  const handleSubmit = () => { onLaunch({/* pass trend follower params */ }); }
+const TrendFollowerConfigForm = ({ onLaunch, isSubmitting }: { onLaunch: (params: any) => void; isSubmitting: boolean }) => {
+  const handleSubmit = () => { onLaunch({}); }
   return (
     <div className="space-y-6 py-4 font-sans text-slate-400">
       <p>Configuration for the Trend Follower Agent is coming soon...</p>
