@@ -54,6 +54,7 @@ test-ledger/
 prisma/dev.db
 prisma/*.db
 migrations/
+!executor/prisma/migrations/
 
 .turbo
 .pnpm-store/
