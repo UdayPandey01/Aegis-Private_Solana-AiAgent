@@ -22,7 +22,6 @@ export class AuthService {
 
         if (!message) {
             console.error(`No challenge found for public key: ${publicKeyStr}`);
-            console.log(`Available challenges: ${Array.from(challenges.keys()).join(', ')}`);
             throw new Error('No challenge found for this public key. Please request a message first.');
         }
 
