@@ -10,17 +10,13 @@ export function Hero() {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.15 },
+      transition: { staggerChildren: 0.15, delayChildren: 0.1 },
     },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8, ease: "easeOut" },
-    },
+    visible: { opacity: 1, y: 0 },
   };
 
   return (
@@ -41,6 +37,7 @@ export function Hero() {
         >
           <motion.h1
             variants={itemVariants}
+            transition={{ duration: 0.8 }}
             className="font-heading text-5xl sm:text-7xl font-bold mb-6 text-slate-50 drop-shadow-lg"
           >
             Autonomous Trading, <br />
@@ -49,6 +46,7 @@ export function Hero() {
 
           <motion.p
             variants={itemVariants}
+            transition={{ duration: 0.8 }}
             className="font-sans text-lg text-slate-400 mb-10 max-w-2xl mx-auto"
           >
             Private, autonomous agents for Solana that protect your strategies
@@ -57,6 +55,7 @@ export function Hero() {
 
           <motion.div
             variants={itemVariants}
+            transition={{ duration: 0.8 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
             <Link href="/app/vault" passHref>
