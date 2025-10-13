@@ -84,7 +84,8 @@ export function useAuth() {
                 localStorage.removeItem(`auth_token_${publicKey.toBase58()}`);
             }
         }
-    }, [connected, publicKey, signMessage, authenticate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [connected, publicKey, signMessage]);
 
     const logout = useCallback(() => {
         if (publicKey) {
