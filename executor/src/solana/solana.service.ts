@@ -22,8 +22,17 @@ export class SolanaService {
     const privateKey = process.env.EXECUTOR_PRIVATE_KEY;
     const programId = process.env.AEGIS_PROGRAM_ID;
 
+    // Debug logging
+    this.logger.log(`Environment check:`);
+    this.logger.log(`- SOLANA_RPC_URL: ${rpcUrl}`);
+    this.logger.log(`- EXECUTOR_PRIVATE_KEY exists: ${!!privateKey}`);
+    this.logger.log(`- AEGIS_PROGRAM_ID exists: ${!!programId}`);
+    this.logger.log(`- All env keys: ${Object.keys(process.env).filter(k => k.includes('EXECUTOR') || k.includes('AEGIS') || k.includes('SOLANA')).join(', ')}`);
+
     if (!privateKey || !programId) {
       this.logger.error('Missing required environment variables!');
+      this.logger.error(`EXECUTOR_PRIVATE_KEY: ${privateKey ? 'SET' : 'MISSING'}`);
+      this.logger.error(`AEGIS_PROGRAM_ID: ${programId ? 'SET' : 'MISSING'}`);
       throw new Error("Missing required environment variables!");
     }
 
