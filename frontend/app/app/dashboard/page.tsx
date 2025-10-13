@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Plus, Wallet, TrendingUp, Activity, MoreHorizontal, Circle, CheckCircle, AlertTriangle, Trash2 } from "lucide-react"
 import Link from "next/link"
 import axios from "axios"
+import { API_ENDPOINTS } from "@/lib/api"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { useVaultBalance } from "@/hooks/useVaultBalance"
 
@@ -67,7 +68,7 @@ export default function DashboardPage() {
       };
 
       try {
-        const response = await axios.get(`http://localhost:3001/jobs?walletAddress=${publicKey.toBase58()}`);
+        const response = await axios.get(API_ENDPOINTS.jobsByWallet(publicKey.toBase58()));
         const userJobs: Agent[] = response.data;
         console.log(`Fetched ${userJobs.length} agents for dashboard`);
 
@@ -125,7 +126,7 @@ export default function DashboardPage() {
 
     setIsDeleting(true);
     try {
-      await axios.delete(`http://localhost:3001/jobs/${agentId}?walletAddress=${publicKey.toBase58()}`);
+      await axios.delete(API_ENDPOINTS.deleteJob(agentId, publicKey.toBase58()));
 
       setAgents(prev => prev.filter(agent => agent.id !== agentId));
 

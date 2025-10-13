@@ -13,6 +13,7 @@ import { useWallet } from "@solana/wallet-adapter-react"
 import { useVaultBalance } from "@/hooks/useVaultBalance"
 import { useSSE } from "@/hooks/useSSE"
 import axios from "axios"
+import { API_ENDPOINTS } from "@/lib/api"
 
 type Agent = {
   id: number;
@@ -97,7 +98,7 @@ function AgentStatusPageContent() {
     try {
       console.log(`Fetching execution logs for job ${agentId}`);
       const response = await axios.get(
-        `http://localhost:3001/jobs/execution-logs?walletAddress=${publicKey.toBase58()}&jobId=${agentId}`
+        API_ENDPOINTS.executionLogs(publicKey.toBase58(), agentId)
       );
 
       const realLogs: ExecutionLog[] = response.data;
@@ -142,7 +143,7 @@ function AgentStatusPageContent() {
 
       setIsLoading(true);
       try {
-        const response = await axios.get(`http://localhost:3001/jobs?walletAddress=${publicKey.toBase58()}`);
+        const response = await axios.get(API_ENDPOINTS.jobsByWallet(publicKey.toBase58()));
         const userJobs: Agent[] = response.data;
         const selectedAgent = userJobs.find(job => job.id.toString() === agentId);
 

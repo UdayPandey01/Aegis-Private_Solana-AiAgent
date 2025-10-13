@@ -12,6 +12,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import axios from "axios"
 import { useWallet } from "@solana/wallet-adapter-react"
+import { API_ENDPOINTS } from "@/lib/api"
 
 const templates = [
   { id: "arbitrage", icon: ArrowUpDown, title: "Cross-DEX Arbitrage", description: "Exploit price differences across Solana DEXs instantly and privately.", features: ["Multi-DEX scanning", "Gas optimization", "MEV protection"] },
@@ -45,7 +46,7 @@ export default function MarketplacePage() {
     };
 
     try {
-      await axios.post('http://localhost:3001/jobs/start-continuous', jobPayload);
+      await axios.post(API_ENDPOINTS.startContinuous, jobPayload);
       router.push("/app/dashboard");
     } catch (error) {
       console.error("Failed to launch agent:", error);

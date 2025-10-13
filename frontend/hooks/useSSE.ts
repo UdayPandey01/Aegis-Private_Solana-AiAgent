@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { API_ENDPOINTS } from '@/lib/api';
 
 interface UseSSEReturn {
     isConnected: boolean;
@@ -49,7 +50,7 @@ export const useSSE = (): UseSSEReturn => {
             eventSourceRef.current.close();
         }
 
-        const url = `http://localhost:3001/jobs/stream/${jobId}?walletAddress=${encodeURIComponent(userWalletAddress)}`;
+        const url = API_ENDPOINTS.streamJob(jobId, userWalletAddress);
         const eventSource = new EventSource(url);
         eventSourceRef.current = eventSource;
 
