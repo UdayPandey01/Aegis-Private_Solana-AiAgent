@@ -183,15 +183,7 @@ function AgentStatusPageContent() {
 
           generateRealChartData(pnl);
 
-          const createdTime = new Date(selectedAgent.createdAt).toLocaleTimeString();
-          setLogs([{
-            id: Date.now(),
-            timestamp: createdTime,
-            action: "Agent Created",
-            result: `${selectedAgent.agentType} agent initialized with status: ${selectedAgent.status}`,
-            tx: null
-          }]);
-
+          // Fetch real execution logs instead of setting a dummy log
           fetchExecutionLogs(selectedAgent.jobId);
         }
       } catch (error) {
@@ -202,7 +194,8 @@ function AgentStatusPageContent() {
     };
 
     fetchAgentData();
-  }, [agentId, publicKey, generateRealChartData, fetchExecutionLogs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentId, publicKey]);
 
   useEffect(() => {
     if (!agent || !publicKey) return;
