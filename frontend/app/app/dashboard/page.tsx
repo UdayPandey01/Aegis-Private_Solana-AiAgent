@@ -126,7 +126,7 @@ export default function DashboardPage() {
 
     setIsDeleting(true);
     try {
-      await axios.delete(API_ENDPOINTS.deleteJob(agentId, publicKey.toBase58()));
+      await axios.delete(API_ENDPOINTS.deleteJob(agentId.toString(), publicKey.toBase58()));
 
       setAgents(prev => prev.filter(agent => agent.id !== agentId));
 
