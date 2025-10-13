@@ -7,6 +7,10 @@ async function bootstrap() {
   // Remove trailing slash from FRONTEND_URL if present
   const frontendUrl = (process.env.FRONTEND_URL || "https://aegis-private-solana-ai-agent.vercel.app").replace(/\/$/, '');
 
+  console.log(`🔧 CORS Configuration:`);
+  console.log(`   - FRONTEND_URL env: ${process.env.FRONTEND_URL}`);
+  console.log(`   - Configured origin: ${frontendUrl}`);
+
   app.enableCors({
     origin: frontendUrl || '*',
     credentials: true,
