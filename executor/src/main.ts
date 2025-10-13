@@ -3,8 +3,12 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Remove trailing slash from FRONTEND_URL if present
+  const frontendUrl = (process.env.FRONTEND_URL || "https://aegis-private-solana-ai-agent.vercel.app").replace(/\/$/, '');
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || '*' || "https://aegis-private-solana-ai-agent.vercel.app",
+    origin: frontendUrl || '*',
     credentials: true,
   });
   const port = process.env.PORT || 3001;
