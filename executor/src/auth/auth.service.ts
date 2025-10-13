@@ -21,28 +21,38 @@ export class AuthService {
         const message = challenges.get(publicKeyStr);
 
         if (!message) {
+            console.error(`No challenge found for public key: ${publicKeyStr}`);
+            console.log(`Available challenges: ${Array.from(challenges.keys()).join(', ')}`);
             throw new Error('No challenge found for this public key. Please request a message first.');
         }
 
-        const signature = bs58.decode(signatureStr);
-        const messageBytes = new TextEncoder().encode(message);
-        const publicKey = new PublicKey(publicKeyStr).toBytes();
+        try {
+            const signature = bs58.decode(signatureStr);
+            const messageBytes = new TextEncoder().encode(message);
+            const publicKey = new PublicKey(publicKeyStr).toBytes();
 
-        const verified = sign.detached.verify(messageBytes, signature, publicKey);
+            const verified = sign.detached.verify(messageBytes, signature, publicKey);
 
-        if (!verified) {
-            throw new Error('Invalid signature.');
+            if (!verified) {
+                console.error(`Signature verification failed for ${publicKeyStr}`);
+                throw new Error('Invalid signature.');
+            }
+
+            challenges.delete(publicKeyStr);
+
+            let user = await this.prisma.user.findUnique({ where: { walletAddress: publicKeyStr } });
+            if (!user) {
+                console.log(`Creating new user for wallet: ${publicKeyStr}`);
+                user = await this.prisma.user.create({ data: { walletAddress: publicKeyStr } });
+            }
+
+            const token = `session_token_for_${user.walletAddress}`;
+            console.log(`✅ Authentication successful for ${publicKeyStr}`);
+            return { token };
+        } catch (error) {
+            console.error('Signature validation error:', error);
+            throw error;
         }
-
-        challenges.delete(publicKeyStr);
-
-        let user = await this.prisma.user.findUnique({ where: { walletAddress: publicKeyStr } });
-        if (!user) {
-            user = await this.prisma.user.create({ data: { walletAddress: publicKeyStr } });
-        }
-
-        const token = `session_token_for_${user.walletAddress}`;
-        return { token };
     }
 
     async checkUserExists(walletAddress: string) {
