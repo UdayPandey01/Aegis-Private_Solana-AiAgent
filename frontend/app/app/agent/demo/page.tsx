@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -41,7 +41,7 @@ type AgentMetrics = {
   sharpeRatio: number;
 };
 
-export default function AgentStatusPage() {
+function AgentStatusPageContent() {
   const searchParams = useSearchParams();
   const { publicKey } = useWallet();
   const { balance: vaultBalance } = useVaultBalance();
@@ -66,10 +66,10 @@ export default function AgentStatusPage() {
   const generateRealChartData = useCallback((basePnL: number) => {
     const data = [];
     const now = new Date();
-    let cumulativePnL = basePnL; 
+    let cumulativePnL = basePnL;
 
     for (let i = 23; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000); 
+      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
 
       if (basePnL === 0) {
         data.push({
@@ -78,7 +78,7 @@ export default function AgentStatusPage() {
           pnl: 0,
         });
       } else {
-        const variation = (Math.random() - 0.5) * 5; 
+        const variation = (Math.random() - 0.5) * 5;
         cumulativePnL += variation;
 
         data.push({
@@ -163,7 +163,7 @@ export default function AgentStatusPage() {
 
           let pnl = 0;
           if (selectedAgent.result && selectedAgent.status === 'COMPLETED') {
-            if (selectedAgent.result.length > 50) { 
+            if (selectedAgent.result.length > 50) {
               pnl = 0;
             } else {
               pnl = 0;
@@ -265,7 +265,7 @@ export default function AgentStatusPage() {
       removeEventListener('log_update', handleLogUpdate);
       removeEventListener('chart_update', handleChartUpdate);
     };
-  }, [agent?.jobId, publicKey?.toBase58()]); 
+  }, [agent?.jobId, publicKey?.toBase58()]);
 
   if (isLoading) {
     return (
@@ -483,3 +483,18 @@ const StatCard = ({ title, value, description, icon: Icon, delay, children = nul
     </Card>
   </motion.div>
 );
+
+export default function AgentStatusPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading agent status...</p>
+        </div>
+      </div>
+    }>
+      <AgentStatusPageContent />
+    </Suspense>
+  );
+}
