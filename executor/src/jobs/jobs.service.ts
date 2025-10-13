@@ -9,7 +9,7 @@ import { PriceLoggerService } from '../price/price-logger.service';
 @Injectable()
 export class JobsService implements OnModuleInit {
     private readonly logger = new Logger(JobsService.name);
-    private runningAgents = new Map<string, boolean>(); 
+    private runningAgents = new Map<string, boolean>();
     private agentLoops = new Map<string, Promise<void>>();
 
     constructor(
@@ -22,8 +22,15 @@ export class JobsService implements OnModuleInit {
     ) { }
 
     async onModuleInit() {
-        this.logger.log('JobsService initialized - Restoring running agents...');
+        this.logger.log('JobsService initialized');
+        this.logger.warn('⚠️  Auto-restore disabled to save memory on free tier');
+        this.logger.warn('💡 Agents must be manually restarted from the dashboard');
 
+        // DISABLED TO SAVE MEMORY ON FREE TIER (~150MB saved)
+        // If you upgrade to a paid plan, uncomment the code below to enable auto-restore
+        /*
+        this.logger.log('Restoring running agents...');
+        
         try {
             const runningJobs = await this.prisma.job.findMany({
                 where: {
@@ -36,7 +43,6 @@ export class JobsService implements OnModuleInit {
             for (const job of runningJobs) {
                 const agentId = `${job.jobId}_${job.userWalletAddress}`;
 
-                // Parse parameters from database or use defaults
                 let parameters = { profitThreshold: 0.5 };
                 try {
                     if (job.parameters) {
@@ -48,7 +54,6 @@ export class JobsService implements OnModuleInit {
 
                 this.logger.log(`Restarting agent ${agentId} with parameters:`, parameters);
 
-                // Restart the agent without creating a new database record
                 this.runningAgents.set(agentId, true);
                 const loopPromise = this.runContinuousLoop(Number(job.jobId), job.userWalletAddress, parameters);
                 this.agentLoops.set(agentId, loopPromise);
@@ -60,9 +65,10 @@ export class JobsService implements OnModuleInit {
         } catch (error) {
             this.logger.error('Failed to restore running agents:', error);
         }
+        */
     }
 
-  
+
     private formatTimestamp(date: Date = new Date()): string {
         return date.toLocaleTimeString('en-IN', {
             timeZone: 'Asia/Kolkata',
