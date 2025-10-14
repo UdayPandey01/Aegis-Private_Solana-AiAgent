@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import GridDistortion from "@/components/ui/GridDis";
 
 export function Hero() {
 
@@ -23,11 +24,25 @@ export function Hero() {
     <section
       className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black"
     >
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-900 via-black to-slate-900">
-        <div className="absolute inset-0 opacity-20" style={{
-          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%), radial-gradient(circle at 80% 80%, rgba(102, 126, 234, 0.3), transparent 50%)'
-        }} />
+      {/* GridDistortion Background */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{ width: '100%', height: '100%', position: 'absolute' }}
+      >
+        <GridDistortion
+          imageSrc="/bg.jpg"
+          grid={10}
+          mouse={0.1}
+          strength={0.15}
+          relaxation={0.9}
+          className="w-full h-full"
+        />
       </div>
+
+      {/* Subtle vignette for text readability */}
+      <div className="absolute inset-0 z-[1]" style={{
+        background: 'radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.5) 100%)'
+      }}></div>
       <div className="relative z-10 text-center px-4">
         <motion.div
           variants={containerVariants}
@@ -40,8 +55,15 @@ export function Hero() {
             transition={{ duration: 0.8 }}
             className="font-heading text-5xl sm:text-7xl font-bold mb-6 text-slate-50 drop-shadow-lg"
           >
-            Autonomous Trading, <br />
-            Fortified.
+            <span className="bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+              Autonomous
+            </span>{" "}
+            <span className="bg-gradient-to-r from-slate-200 via-slate-100 to-white bg-clip-text text-transparent">
+              Trading
+            </span>, <br />
+            <span className="bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+              Fortified
+            </span>.
           </motion.h1>
 
           <motion.p
