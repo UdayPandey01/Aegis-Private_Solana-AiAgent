@@ -28,12 +28,12 @@ describe("onchain-program", () => {
 
   let userSolATA: PublicKey;
   let userUsdcATA: PublicKey;
-  
+
   const [vaultPDA, vaultBump] = PublicKey.findProgramAddressSync(
     [Buffer.from("vault"), user.publicKey.toBuffer()],
     program.programId
   );
-  
+
   let solVaultATA: PublicKey;
   let usdcVaultATA: PublicKey;
 
@@ -46,8 +46,8 @@ describe("onchain-program", () => {
   const createTestMint = async (): Promise<PublicKey> => {
     return await createMint(
       provider.connection,
-      user.payer, 
-      user.publicKey, 
+      user.payer,
+      user.publicKey,
       null,
       6
     );
@@ -76,7 +76,7 @@ describe("onchain-program", () => {
       user.publicKey
     );
     userUsdcATA = userUsdcAccount.address;
-    
+
     console.log(`User SOL ATA: ${userSolATA.toBase58()}`);
     console.log(`User USDC ATA: ${userUsdcATA.toBase58()}`);
 
@@ -84,12 +84,12 @@ describe("onchain-program", () => {
     await mintTo(provider.connection, user.payer, usdcMint, userUsdcATA, user.payer, 1000 * 10 ** 6);
 
     solVaultATA = (await PublicKey.findProgramAddress(
-        [vaultPDA.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), solMint.toBuffer()],
-        ASSOCIATED_TOKEN_PROGRAM_ID
+      [vaultPDA.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), solMint.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID
     ))[0];
     usdcVaultATA = (await PublicKey.findProgramAddress(
-        [vaultPDA.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), usdcMint.toBuffer()],
-        ASSOCIATED_TOKEN_PROGRAM_ID
+      [vaultPDA.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), usdcMint.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID
     ))[0];
   });
 
@@ -106,13 +106,14 @@ describe("onchain-program", () => {
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
       .rpc();
-    
+
     console.log("Initialize vault transaction signature", tx);
 
     const vaultAccount = await program.account.tradingVault.fetch(vaultPDA);
-    
+
     assert.ok(vaultAccount.owner.equals(user.publicKey), "Vault owner is incorrect");
     assert.ok(vaultAccount.solVault.equals(solVaultATA), "SOL vault address is incorrect");
     assert.ok(vaultAccount.usdcVault.equals(usdcVaultATA), "USDC vault address is incorrect");
@@ -123,7 +124,7 @@ describe("onchain-program", () => {
   it("Deposits SOL and USDC into the vault", async () => {
     const solAmount = new anchor.BN(1 * 10 ** 6);
     const usdcAmount = new anchor.BN(100 * 10 ** 6);
-    
+
     await program.methods
       .deposit(solAmount, usdcAmount)
       .accounts({
@@ -138,19 +139,19 @@ describe("onchain-program", () => {
         usdcMint: usdcMint,
       })
       .rpc();
-      
+
     const vaultAccount = await program.account.tradingVault.fetch(vaultPDA);
     assert.equal(vaultAccount.solBalance.toString(), solAmount.toString());
     assert.equal(vaultAccount.usdcBalance.toString(), usdcAmount.toString());
-    
+
     const solVaultBalance = await provider.connection.getTokenAccountBalance(solVaultATA);
     assert.equal(solVaultBalance.value.amount, solAmount.toString());
   });
 
   it("Withdraws SOL and USDC from the vault", async () => {
-    const solAmount = new anchor.BN(0.5 * 10 ** 6); 
-    const usdcAmount = new anchor.BN(50 * 10 ** 6); 
-    
+    const solAmount = new anchor.BN(0.5 * 10 ** 6);
+    const usdcAmount = new anchor.BN(50 * 10 ** 6);
+
     await program.methods
       .withdraw(solAmount, usdcAmount)
       .accounts({
@@ -165,11 +166,11 @@ describe("onchain-program", () => {
         usdcMint: usdcMint,
       })
       .rpc();
-      
+
     const vaultAccount = await program.account.tradingVault.fetch(vaultPDA);
-    assert.equal(vaultAccount.solBalance.toNumber(), 500000); 
+    assert.equal(vaultAccount.solBalance.toNumber(), 500000);
     assert.equal(vaultAccount.usdcBalance.toNumber(), 50000000);
-    
+
     const solVaultBalance = await provider.connection.getTokenAccountBalance(solVaultATA);
     assert.equal(solVaultBalance.value.amount, "500000");
   });
@@ -183,7 +184,7 @@ describe("onchain-program", () => {
         systemProgram: SystemProgram.programId,
       })
       .rpc();
-      
+
     const jobAccount = await program.account.job.fetch(jobPDA);
     assert.ok(jobAccount.authority.equals(user.publicKey));
     assert.equal(jobAccount.jobId.toString(), jobId.toString());
@@ -200,7 +201,7 @@ describe("onchain-program", () => {
         authority: user.publicKey,
       })
       .rpc();
-      
+
     const jobAccount = await program.account.job.fetch(jobPDA);
     assert.deepEqual(jobAccount.status, { completed: {} });
     assert.deepEqual(jobAccount.result, result);

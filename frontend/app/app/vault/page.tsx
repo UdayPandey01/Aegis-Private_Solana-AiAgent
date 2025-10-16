@@ -76,8 +76,16 @@ export default function VaultPage() {
       program.programId
     );
 
-    const solVaultAta = await getAssociatedTokenAddress(SOL_MINT, vaultPda, true);
-    const usdcVaultAta = await getAssociatedTokenAddress(USDC_MINT, vaultPda, true);
+    // Correct ATA calculation using findProgramAddress
+    const solVaultAta = (await PublicKey.findProgramAddress(
+      [vaultPda.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), SOL_MINT.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    ))[0];
+
+    const usdcVaultAta = (await PublicKey.findProgramAddress(
+      [vaultPda.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDC_MINT.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    ))[0];
 
     try {
       const tx = await program.methods
