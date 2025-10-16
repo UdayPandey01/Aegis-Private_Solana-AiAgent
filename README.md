@@ -18,6 +18,7 @@
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+- [🚀 Deployment Guides](#-deployment-guides) ⭐ NEW!
 - [Key Features](#key-features)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
@@ -27,10 +28,39 @@
 - [Usage](#usage)
 - [Project Structure](#project-structure)
 - [API Documentation](#api-documentation)
+- [Auto-Restart Guide](#auto-restart-guide) ⭐ NEW!
 - [Smart Contracts](#smart-contracts)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
+
+---
+
+## 🚀 Deployment Guides
+
+Ready to deploy AEGIS to production? We've created comprehensive guides:
+
+### Quick Deploy (15 minutes)
+
+- **[DigitalOcean Quick Start →](DIGITALOCEAN_QUICK_START.md)** - Deploy in 15 minutes ($20/month)
+- **[Deployment Summary →](DEPLOYMENT_SUMMARY.md)** - Commands & quick reference
+
+### Complete Guides
+
+- **[Deployment Index →](DEPLOYMENT_INDEX.md)** - Find the right guide for you
+- **[DigitalOcean Guide →](executor/DIGITALOCEAN_DEPLOYMENT_GUIDE.md)** - Full DigitalOcean deployment
+- **[AWS Guide →](executor/AWS_DEPLOYMENT_GUIDE.md)** - AWS Elastic Beanstalk deployment
+- **[Deployment Options →](DEPLOYMENT_OPTIONS.md)** - Compare all platforms
+- **[Deployment Checklist →](DEPLOYMENT_CHECKLIST.md)** - Don't miss a step
+
+### Tools & Scripts
+
+- **Scripts**: `scripts/deploy-to-digitalocean.sh` (Linux/Mac) or `.ps1` (Windows)
+- **CI/CD**: `.github/workflows/deploy-digitalocean.yml`
+- **Config**: `executor/digitalocean-app.yaml`
+- **Checklist**: [docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md) - Complete deployment checklist
+
+**New to deployment?** Start here → [`DEPLOYMENT_README.md`](DEPLOYMENT_README.md)
 
 ---
 
@@ -55,7 +85,9 @@
 - **Automated Market Scanning**: Monitors Orca, Raydium, and Jupiter DEXes for opportunities
 - **Configurable Thresholds**: Set custom profit thresholds for trade execution
 - **Multi-Agent Support**: Run multiple agents simultaneously with different strategies
-- **Auto-Restart**: Agents automatically resume after backend restarts
+- **Auto-Restart**: Agents automatically resume after backend restarts or failures
+- **Manual Restart**: Users can manually restart agents via dashboard or API
+- **Real-time Monitoring**: Continuous monitoring with 10-second intervals
 
 ### 🔒 Zero-Knowledge Proofs
 
@@ -183,16 +215,25 @@ Before you begin, ensure you have the following installed:
 
 ---
 
-## 🚀 Installation
+## 🚀 Installation & Deployment
 
-### 1. Clone the Repository
+### Quick Deploy to Production
+
+Choose your deployment platform:
+
+- **[DigitalOcean](DIGITALOCEAN_QUICK_START.md)** - Deploy in 15 minutes ($20/month)
+- **[AWS Elastic Beanstalk](executor/AWS_DEPLOYMENT_GUIDE.md)** - Enterprise-grade deployment
+
+### Local Development Setup
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/yourusername/aegis-private-solana-aiagent.git
 cd aegis-private-solana-aiagent
 ```
 
-### 2. Install Frontend Dependencies
+#### 2. Install Frontend Dependencies
 
 ```bash
 cd frontend
@@ -200,7 +241,7 @@ npm install
 cd ..
 ```
 
-### 3. Install Backend Dependencies
+#### 3. Install Backend Dependencies
 
 ```bash
 cd executor
@@ -208,7 +249,7 @@ npm install
 cd ..
 ```
 
-### 4. Set Up Database
+#### 4. Set Up Database
 
 ```bash
 cd executor
@@ -218,7 +259,7 @@ npx prisma generate
 npx prisma migrate dev --name init
 ```
 
-### 5. Build ZK Agent (Optional)
+#### 5. Build ZK Agent (Optional)
 
 ```bash
 cd zk-agent
@@ -226,7 +267,7 @@ cargo build --release
 cd ..
 ```
 
-### 6. Deploy Smart Contracts (Optional)
+#### 6. Deploy Smart Contracts (Optional)
 
 ```bash
 cd programs/onchain-program
@@ -379,6 +420,8 @@ aegis-private-solana-aiagent/
 
 ## 🔌 API Documentation
 
+For comprehensive API documentation, see [docs/API.md](docs/API.md).
+
 ### REST Endpoints
 
 #### Jobs
@@ -419,6 +462,12 @@ Content-Type: application/json
 POST /jobs/pause/:jobId?walletAddress=YOUR_WALLET
 ```
 
+**Restart Agent**
+
+```http
+POST /jobs/restart/:jobId?walletAddress=YOUR_WALLET
+```
+
 **Get Agent Status**
 
 ```http
@@ -452,6 +501,27 @@ SSE Event Types:
 - `log_update` - New execution logs
 - `chart_update` - Performance metrics updated
 - `ping` - Keep-alive heartbeat
+
+---
+
+## 🔄 Auto-Restart Guide
+
+AEGIS includes comprehensive auto-restart functionality to ensure agents continue running even after backend restarts or failures.
+
+### Key Features
+
+- **Automatic Detection**: Dashboard detects stopped agents every 30 seconds
+- **Auto-Restart**: Automatically restarts agents marked as RUNNING but not actually running
+- **Manual Restart**: Users can manually restart agents via dashboard or API
+- **Real-time Logs**: All restart actions are logged and sent via SSE
+
+### Quick Start
+
+1. **Automatic**: Agents auto-restart when dashboard detects they've stopped
+2. **Manual**: Click "Restart Agent" button in agent detail page
+3. **API**: Call `POST /jobs/restart/:jobId` endpoint
+
+For detailed information, see [docs/AUTO_RESTART_GUIDE.md](docs/AUTO_RESTART_GUIDE.md).
 
 ---
 
@@ -498,7 +568,17 @@ cd executor
 npx prisma migrate dev --name add_parameters_field
 ```
 
-#### 2. SSE Not Receiving Logs
+#### 2. Agents Not Auto-Restarting
+
+**Cause:** Auto-restart functionality disabled on free tier
+
+**Solution:**
+
+- **Automatic**: Dashboard automatically detects and restarts stopped agents every 30 seconds
+- **Manual**: Use the "Restart Agent" button in the agent detail page
+- **API**: Call `POST /jobs/restart/:jobId` endpoint directly
+
+#### 3. SSE Not Receiving Logs
 
 **Cause:** Frontend not connected to SSE stream
 
@@ -508,7 +588,7 @@ npx prisma migrate dev --name add_parameters_field
 - Verify backend is running on port 3001
 - Check firewall/CORS settings
 
-#### 3. Transaction Submission Fails
+#### 4. Transaction Submission Fails
 
 **Cause:** Jito relayer endpoints down or rate limited
 
@@ -518,7 +598,7 @@ npx prisma migrate dev --name add_parameters_field
 - Check executor wallet has sufficient SOL balance
 - Verify RPC URL is correct in `.env`
 
-#### 4. Database Connection Error
+#### 5. Database Connection Error
 
 **Cause:** PostgreSQL not running or wrong credentials
 
@@ -532,7 +612,7 @@ psql -U postgres -c "CREATE DATABASE aegis;"
 cd executor && npx prisma migrate reset
 ```
 
-#### 5. ZK Agent Build Fails
+#### 6. ZK Agent Build Fails
 
 **Cause:** Missing Rust toolchain or dependencies
 

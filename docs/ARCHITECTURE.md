@@ -116,6 +116,8 @@ Responsibilities:
 - Trade execution coordination
 - Database persistence
 - SSE event emission
+- Auto-restart functionality
+- Agent status monitoring
 ```
 
 **SSE Service** (`sse.service.ts`)
@@ -260,7 +262,16 @@ State:
            ├─> Update DB (P&L, trades)
            └─> Emit SSE event
 
-3. User Views Agent
+3. Auto-Restart Detection
+   └─> Dashboard: Check every 30 seconds
+       ├─> Query agent status
+       ├─> If marked RUNNING but not running:
+       │   └─> POST /jobs/restart/:jobId
+       │       └─> Backend: Restart agent
+       │           └─> Emit restart log
+       └─> Continue monitoring
+
+4. User Views Agent
    └─> Frontend: Connect SSE stream
        └─> Receive initial logs from DB
            └─> Receive real-time updates
