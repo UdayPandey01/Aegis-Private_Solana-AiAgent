@@ -64,6 +64,7 @@ export class JobsController {
 
     @Post('restart/:jobId')
     async restartAgent(@Param('jobId') jobId: string, @Query('walletAddress') walletAddress: string, @Res() res: Response) {
+        // Force deployment update
         if (!walletAddress) {
             return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Wallet address is required' });
         }
