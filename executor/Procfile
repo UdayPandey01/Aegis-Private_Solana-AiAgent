@@ -1,1 +1,1 @@
-web: npx prisma migrate deploy && NODE_OPTIONS="--max-old-space-size=450" node dist/main
+web: npm run start:prod:512mb
