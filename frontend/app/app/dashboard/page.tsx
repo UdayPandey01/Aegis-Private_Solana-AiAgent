@@ -77,6 +77,9 @@ export default function DashboardPage() {
           return hasChanged ? userJobs : prev;
         });
 
+        // Auto-restart agents that are marked as RUNNING but may have stopped
+        // TEMPORARILY DISABLED - Waiting for restart endpoint deployment
+        /*
         const runningAgents = userJobs.filter(job => job.status === 'RUNNING');
         for (const agent of runningAgents) {
           try {
@@ -94,6 +97,7 @@ export default function DashboardPage() {
             console.error(`Failed to check/restart agent ${agent.id}:`, error);
           }
         }
+        */
 
         const totalPnl = userJobs.reduce((acc, job) => {
           console.log("Processing job result:", job.result);
