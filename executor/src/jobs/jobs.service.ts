@@ -702,6 +702,72 @@ export class JobsService implements OnModuleInit {
         }]);
     }
 
+    async restartAgent(jobId: number, userWalletAddress: string): Promise<boolean> {
+        const agentId = `${jobId}_${userWalletAddress}`;
+
+        try {
+            const job = await this.prisma.job.findFirst({
+                where: {
+                    jobId: BigInt(jobId),
+                    userWalletAddress: userWalletAddress
+                }
+            });
+
+            if (!job) {
+                this.logger.warn(`Job ${jobId} not found for user ${userWalletAddress}`);
+                return false;
+            }
+
+            // Stop existing agent if running
+            if (this.runningAgents.has(agentId)) {
+                this.runningAgents.set(agentId, false);
+                this.logger.log(`Stopping existing agent ${agentId}`);
+            }
+
+            // Parse parameters
+            let parameters = { profitThreshold: 0.5 };
+            try {
+                if (job.parameters) {
+                    parameters = JSON.parse(job.parameters);
+                }
+            } catch (error) {
+                this.logger.warn(`Failed to parse parameters for agent ${agentId}, using defaults`);
+            }
+
+            // Update database status to RUNNING
+            await this.prisma.job.updateMany({
+                where: {
+                    jobId: BigInt(jobId),
+                    userWalletAddress: userWalletAddress
+                },
+                data: {
+                    status: 'RUNNING'
+                }
+            });
+
+            // Start the agent
+            this.runningAgents.set(agentId, true);
+            const loopPromise = this.runContinuousLoop(jobId, userWalletAddress, parameters);
+            this.agentLoops.set(agentId, loopPromise);
+
+            this.logger.log(`✅ Agent ${agentId} restarted successfully with parameters:`, parameters);
+
+            // Emit restart log
+            this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [{
+                id: Date.now(),
+                timestamp: this.formatTimestamp(),
+                action: "Agent Restarted",
+                result: `Agent restarted successfully. Monitoring for arbitrage opportunities...`,
+                tx: null,
+            }]);
+
+            return true;
+        } catch (error) {
+            this.logger.error(`Failed to restart agent ${agentId}:`, error);
+            return false;
+        }
+    }
+
     /**
      * Check if agent is running
      */

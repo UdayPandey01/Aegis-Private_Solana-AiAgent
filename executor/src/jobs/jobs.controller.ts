@@ -62,6 +62,24 @@ export class JobsController {
         return res.status(HttpStatus.OK).json({ message: 'Agent paused successfully.' });
     }
 
+    @Post('restart/:jobId')
+    async restartAgent(@Param('jobId') jobId: string, @Query('walletAddress') walletAddress: string, @Res() res: Response) {
+        if (!walletAddress) {
+            return res.status(HttpStatus.BAD_REQUEST).json({ message: 'Wallet address is required' });
+        }
+
+        try {
+            const success = await this.jobsService.restartAgent(parseInt(jobId), walletAddress);
+            if (success) {
+                return res.json({ message: 'Agent restarted successfully' });
+            } else {
+                return res.status(HttpStatus.NOT_FOUND).json({ message: 'Agent not found' });
+            }
+        } catch (error) {
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Failed to restart agent' });
+        }
+    }
+
     @Get('status/:jobId')
     async getAgentStatus(@Param('jobId') jobId: string, @Query('walletAddress') walletAddress: string) {
         if (!walletAddress) {

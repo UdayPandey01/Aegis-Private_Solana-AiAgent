@@ -1,4 +1,3 @@
-// API configuration
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export const API_ENDPOINTS = {
@@ -18,6 +17,8 @@ export const API_ENDPOINTS = {
     jobsByWallet: (walletAddress: string) => `${API_BASE_URL}/jobs?walletAddress=${walletAddress}`,
     deleteJob: (jobId: string, walletAddress: string) =>
         `${API_BASE_URL}/jobs/${jobId}?walletAddress=${walletAddress}`,
+    restartJob: (jobId: string, walletAddress: string) =>
+        `${API_BASE_URL}/jobs/restart/${jobId}?walletAddress=${walletAddress}`,
     streamJob: (jobId: string, walletAddress: string) =>
         `${API_BASE_URL}/jobs/stream/${jobId}?walletAddress=${encodeURIComponent(walletAddress)}`,
 };

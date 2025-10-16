@@ -350,6 +350,24 @@ function AgentStatusPageContent() {
               >
                 {isRunning ? <><Pause className="h-4 w-4" /> Pause Agent</> : <><Play className="h-4 w-4" /> Resume Agent</>}
               </Button>
+              <Button
+                onClick={async () => {
+                  if (!publicKey) return;
+                  try {
+                    await axios.post(API_ENDPOINTS.restartJob(agent.id.toString(), publicKey.toBase58()));
+                    console.log('Agent restarted successfully');
+                    // Refresh the page to get updated logs
+                    window.location.reload();
+                  } catch (error) {
+                    console.error('Failed to restart agent:', error);
+                    alert('Failed to restart agent. Please try again.');
+                  }
+                }}
+                variant="outline"
+                className="font-sans flex items-center gap-2 w-full sm:w-auto"
+              >
+                <Activity className="h-4 w-4" /> Restart Agent
+              </Button>
             </div>
           </div>
         </motion.div>
