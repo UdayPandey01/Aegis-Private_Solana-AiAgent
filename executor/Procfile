@@ -1,1 +1,1 @@
-web: npx prisma migrate deploy && node --max-old-space-size=450 dist/main
+web: npx prisma migrate deploy && NODE_OPTIONS="--max-old-space-size=450" node dist/main
