@@ -35,8 +35,8 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Expose port
-EXPOSE 3001
+EXPOSE 10000
 
-# Start command
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+# Start command with memory optimizations
+CMD ["npm", "run", "start:prod:512mb"]
 
