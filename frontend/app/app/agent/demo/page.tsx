@@ -16,6 +16,8 @@ import axios from "axios"
 import { API_ENDPOINTS } from "@/lib/api"
 import { useToastNotifications } from "@/hooks/use-toast-notifications"
 
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV === 'development';
+
 type Agent = {
   id: number;
   jobId: string;

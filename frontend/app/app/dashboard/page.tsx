@@ -11,6 +11,8 @@ import { API_ENDPOINTS } from "@/lib/api"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { useVaultBalance } from "@/hooks/useVaultBalance"
 import { useToastNotifications } from "@/hooks/use-toast-notifications"
+
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV === 'development';
 import { useSolPrice } from "@/hooks/useSolPrice"
 
 type Agent = {

@@ -5,6 +5,11 @@ import { OnchainProgram } from '../idl/onchain_program';
 import { Keypair, Connection, PublicKey, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import bs58 from 'bs58';
 
+const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+
+const USDC_MINT = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
+
 const JITO_TIP_ACCOUNT = new PublicKey("9jTuMHumUrYp8F8TFJUSN9tBTXGCV8m332AHZbxtm82t");
 
 @Injectable()
@@ -15,7 +20,7 @@ export class SolanaService {
   private readonly executorKeypair: Keypair;
 
   private lastApiCall = 0;
-  private readonly minApiDelay = 1000; // 1 second between API calls
+  private readonly minApiDelay = 1000;
 
   constructor() {
     const rpcUrl = process.env.SOLANA_RPC_URL || 'http://127.0.0.1:8899';
@@ -188,6 +193,87 @@ export class SolanaService {
     } catch (error) {
       this.logger.error('Failed to serialize tip transaction:', error);
       throw new Error(`Tip transaction serialization failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Transfer real USDC to user's vault as profit
+   */
+  async transferUSDCToVault(userWalletAddress: string, usdcAmount: number): Promise<{ success: boolean; signature?: string; error?: string }> {
+    try {
+      this.logger.log(`Transferring ${usdcAmount} micro USDC to user vault: ${userWalletAddress}`);
+
+      // Get user's vault PDA
+      const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), new PublicKey(userWalletAddress).toBuffer()],
+        this.program.programId
+      );
+
+      // Get vault's USDC token account
+      const [vaultUsdcAta] = PublicKey.findProgramAddressSync(
+        [vaultPda.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDC_MINT.toBuffer()],
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+
+      // Get executor's USDC token account (funding source)
+      const [executorUsdcAta] = PublicKey.findProgramAddressSync(
+        [this.executorKeypair.publicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDC_MINT.toBuffer()],
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+
+      // Check if executor has enough USDC
+      try {
+        const executorBalance = await this.provider.connection.getTokenAccountBalance(executorUsdcAta);
+        const availableUSDC = executorBalance.value.amount;
+
+        if (parseInt(availableUSDC) < usdcAmount) {
+          this.logger.warn(`Insufficient USDC balance. Available: ${availableUSDC}, Required: ${usdcAmount}`);
+          return { success: false, error: 'Insufficient USDC balance for profit transfer' };
+        }
+      } catch (error) {
+        this.logger.warn(`Could not check executor USDC balance: ${error.message}`);
+        return { success: false, error: 'Could not verify executor USDC balance' };
+      }
+
+      // Create transfer instruction
+      const transferIx = await this.program.methods
+        .deposit(new anchor.BN(0), new anchor.BN(usdcAmount))
+        .accounts({
+          vault: vaultPda,
+          owner: this.executorKeypair.publicKey,
+          userSolAccount: executorUsdcAta, // Using executor's USDC account as source
+          solVault: vaultUsdcAta, // Transfer to vault's USDC account
+          userUsdcAccount: executorUsdcAta,
+          usdcVault: vaultUsdcAta,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          solMint: USDC_MINT,
+          usdcMint: USDC_MINT,
+        } as any)
+        .instruction();
+
+      // Build and sign transaction
+      const latestBlockhash = await this.provider.connection.getLatestBlockhash();
+      const tx = new anchor.web3.Transaction();
+      tx.add(transferIx);
+      tx.recentBlockhash = latestBlockhash.blockhash;
+      tx.feePayer = this.executorKeypair.publicKey;
+      tx.sign(this.executorKeypair);
+
+      // Send transaction
+      const signature = await this.provider.connection.sendTransaction(tx, [this.executorKeypair], {
+        skipPreflight: false,
+        maxRetries: 3,
+        preflightCommitment: 'confirmed'
+      });
+
+      this.logger.log(`✅ USDC profit transfer successful. Signature: ${signature}`);
+      this.logger.log(`View on explorer: https://explorer.solana.com/tx/${signature}?cluster=devnet`);
+
+      return { success: true, signature };
+
+    } catch (error) {
+      this.logger.error('Failed to transfer USDC to vault:', error);
+      return { success: false, error: error.message };
     }
   }
 }
