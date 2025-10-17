@@ -11,6 +11,7 @@ import { API_ENDPOINTS } from "@/lib/api"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { useVaultBalance } from "@/hooks/useVaultBalance"
 import { useToastNotifications } from "@/hooks/use-toast-notifications"
+import { useSolPrice } from "@/hooks/useSolPrice"
 
 type Agent = {
   id: number;
@@ -35,6 +36,7 @@ export default function DashboardPage() {
   const { showSuccess, showError, showWarning } = useToastNotifications();
 
   const { balance: vaultBalance, isLoading: vaultLoading } = useVaultBalance();
+  const { price: solPrice, change24h, isLoading: priceLoading } = useSolPrice();
 
   useEffect(() => {
     setIsMounted(true);
@@ -181,11 +183,11 @@ export default function DashboardPage() {
           <p className="font-sans text-slate-400">Manage your autonomous trading agents.</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Total Vault Balance"
             value={`$${stats.totalBalance.toFixed(2)}`}
-            description="Combined value of all assets"
+            description={priceLoading ? "Loading SOL price..." : `SOL: $${solPrice.toFixed(2)} ${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`}
             icon={Wallet}
             delay={0.1}
           />
@@ -202,6 +204,13 @@ export default function DashboardPage() {
             description={agents.length > 0 ? `${agents.length} agent(s) running` : "No agents running"}
             icon={Activity}
             delay={0.3}
+          />
+          <StatCard
+            title="SOL Price"
+            value={priceLoading ? "Loading..." : `$${solPrice.toFixed(2)}`}
+            description={priceLoading ? "Fetching price..." : `24h: ${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`}
+            icon={TrendingUp}
+            delay={0.4}
           />
         </div>
 

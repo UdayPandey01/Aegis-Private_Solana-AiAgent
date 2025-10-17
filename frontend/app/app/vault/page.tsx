@@ -18,6 +18,7 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_I
 import idl from "../../../src/idl/onchain_program.json";
 import type { OnchainProgram } from "../../../src/types/onchain_program";
 import { useToastNotifications } from "@/hooks/use-toast-notifications";
+import { useSolPrice } from "@/hooks/useSolPrice";
 
 const SOL_MINT = NATIVE_MINT;
 const USDC_MINT = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
@@ -33,6 +34,7 @@ export default function VaultPage() {
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [vaultExists, setVaultExists] = useState(false);
   const { showSuccess, showError, showWarning, showInfo } = useToastNotifications();
+  const { price: solPrice, isLoading: priceLoading } = useSolPrice();
 
   const program = useMemo(() => {
     if (wallet.publicKey) {
@@ -614,7 +616,7 @@ export default function VaultPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <StatCard title="SOL Balance" value={`${solBalance.toFixed(4)} SOL`} description="In Vault" delay={0.1} />
               <StatCard title="USDC Balance" value={`${usdcBalance.toFixed(2)} USDC`} description="In Vault" delay={0.2} />
-              <StatCard title="Total Value" value={`$${(solBalance * 150 + usdcBalance).toFixed(2)}`} description="Estimated" delay={0.3} />
+              <StatCard title="Total Value" value={`$${(solBalance * solPrice + usdcBalance).toFixed(2)}`} description={priceLoading ? "Loading price..." : `SOL: $${solPrice.toFixed(2)}`} delay={0.3} />
             </div>
 
             <motion.div

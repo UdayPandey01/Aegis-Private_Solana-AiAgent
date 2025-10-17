@@ -6,6 +6,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
 import idl from "../src/idl/onchain_program.json";
 import type { OnchainProgram } from "../src/types/onchain_program";
+import { useSolPrice } from "./useSolPrice";
 
 const USDC_MINT = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
 
@@ -20,6 +21,7 @@ export const useVaultBalance = () => {
     const { connection } = useConnection();
     const wallet = useWallet();
     const { publicKey } = wallet;
+    const { price: solPrice } = useSolPrice();
     const [balance, setBalance] = useState<VaultBalance>({
         solBalance: 0,
         usdcBalance: 0,
@@ -62,9 +64,8 @@ export const useVaultBalance = () => {
             const solBalance = solVaultTokenAccount.value.uiAmount || 0;
             const usdcBalance = usdcVaultTokenAccount.value.uiAmount || 0;
 
-            // Calculate total value in USD (using hardcoded SOL price of $150)
-            const solPriceUSD = 150;
-            const totalValueUSD = (solBalance * solPriceUSD) + usdcBalance;
+            // Calculate total value in USD using real-time SOL price
+            const totalValueUSD = (solBalance * solPrice) + usdcBalance;
 
             setBalance({
                 solBalance,
