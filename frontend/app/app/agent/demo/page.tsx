@@ -15,6 +15,7 @@ import { useSSE } from "@/hooks/useSSE"
 import axios from "axios"
 import { API_ENDPOINTS } from "@/lib/api"
 import { useToastNotifications } from "@/hooks/use-toast-notifications"
+import { toast } from "sonner"
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV === 'development';
 
@@ -67,6 +68,30 @@ function AgentStatusPageContent() {
   const [logs, setLogs] = useState<ExecutionLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
+
+  // Show funny toast notification when user first visits the page
+  useEffect(() => {
+    const hasSeenToast = sessionStorage.getItem('agent-demo-toast-shown');
+    if (!hasSeenToast) {
+      setTimeout(() => {
+        toast.info("Agent Sleeping", {
+          description: "Click 'Restart Agent' to wake it up!",
+          duration: 5000,
+          action: {
+            label: "Wake Up!",
+            onClick: () => {
+              const restartButton = document.querySelector('[data-testid="restart-button"]') as HTMLElement;
+              if (restartButton) {
+                restartButton.scrollIntoView({ behavior: 'smooth' });
+                restartButton.click();
+              }
+            }
+          }
+        });
+        sessionStorage.setItem('agent-demo-toast-shown', 'true');
+      }, 1500);
+    }
+  }, []);
 
   const generateRealChartData = useCallback((basePnL: number) => {
     const data = [];
@@ -355,6 +380,7 @@ function AgentStatusPageContent() {
                 {isRunning ? <><Pause className="h-4 w-4" /> Pause Agent</> : <><Play className="h-4 w-4" /> Resume Agent</>}
               </Button>
               <Button
+                data-testid="restart-button"
                 onClick={async () => {
                   if (!publicKey) return;
                   try {
