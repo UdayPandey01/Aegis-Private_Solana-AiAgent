@@ -356,12 +356,24 @@ function AgentStatusPageContent() {
                 onClick={async () => {
                   if (!publicKey) return;
                   try {
-                    await axios.post(API_ENDPOINTS.restartJob(agent.id.toString(), publicKey.toBase58()));
-                    console.log('Agent restarted successfully');
+                    const restartUrl = API_ENDPOINTS.restartJob(agent.jobId, publicKey.toBase58());
+                    console.log('Restarting agent with URL:', restartUrl);
+                    console.log('Making POST request to:', restartUrl);
+
+                    const response = await axios.post(restartUrl, {}, {
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      method: 'POST'
+                    });
+
+                    console.log('Agent restarted successfully:', response.data);
+                    showSuccess('Agent restarted successfully!');
                     // Refresh the page to get updated logs
                     window.location.reload();
                   } catch (error) {
                     console.error('Failed to restart agent:', error);
+                    console.error('Error details:', error.response?.data);
                     showError('Failed to restart agent', 'Please try again.');
                   }
                 }}
