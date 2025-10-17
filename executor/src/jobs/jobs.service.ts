@@ -609,8 +609,7 @@ export class JobsService implements OnModuleInit {
         // Update user stats with mock profit
         await this.updateUserStatsWithMockProfit(userWalletAddress, profitUSD);
 
-        // Transfer real money to user vault (10% of profit as real USDC)
-        const realProfitAmount = profitUSD * 0.1; // 10% of profit as real money
+        const realProfitAmount = profitUSD * 0.1;
         await this.transferRealProfitToVault(userWalletAddress, realProfitAmount);
 
         // Update job status
@@ -677,17 +676,18 @@ export class JobsService implements OnModuleInit {
     }
 
     /**
-     * Transfer real profit to user's vault (10% of calculated profit)
+     * Transfer real profit to user's vault (10% of calculated profit as SOL)
      */
     private async transferRealProfitToVault(userWalletAddress: string, profitAmount: number): Promise<void> {
         try {
-            this.logger.log(`Transferring real profit $${profitAmount.toFixed(2)} to user vault: ${userWalletAddress}`);
+            this.logger.log(`Transferring real profit $${profitAmount.toFixed(2)} (as SOL) to user vault: ${userWalletAddress}`);
 
-            // Convert USD profit to USDC (assuming 1 USD = 1 USDC)
-            const usdcAmount = Math.floor(profitAmount * 1000000); // Convert to micro USDC (6 decimals)
+            // Convert USD profit to SOL (assuming SOL = $180)
+            const solAmount = profitAmount / 180; // Convert USD to SOL
+            const lamports = Math.floor(solAmount * 1000000000); // Convert to lamports (9 decimals)
 
-            if (usdcAmount < 1000) { // Minimum 0.001 USDC transfer
-                this.logger.log(`Profit amount too small (${usdcAmount} micro USDC), skipping real transfer`);
+            if (lamports < 1000000) { // Minimum 0.001 SOL transfer
+                this.logger.log(`Profit amount too small (${lamports} lamports), skipping real transfer`);
                 return;
             }
 
@@ -701,21 +701,21 @@ export class JobsService implements OnModuleInit {
                 return;
             }
 
-            // Transfer real USDC to user's vault using Solana service
-            const transferResult = await this.solanaService.transferUSDCToVault(
+            // Transfer real SOL to user's vault using Solana service
+            const transferResult = await this.solanaService.transferSOLToVault(
                 userWalletAddress,
-                usdcAmount
+                lamports
             );
 
             if (transferResult.success) {
-                this.logger.log(`✅ Real profit transfer successful: ${usdcAmount} micro USDC to ${userWalletAddress}`);
+                this.logger.log(`✅ Real profit transfer successful: ${solAmount.toFixed(6)} SOL to ${userWalletAddress}`);
 
                 // Emit log about real money transfer
                 this.sseService.emitLogUpdate(userWalletAddress, userWalletAddress, [{
                     id: Date.now(),
                     timestamp: this.formatTimestamp(),
                     action: "Real Profit Transfer",
-                    result: `Real profit of $${profitAmount.toFixed(2)} USDC transferred to your vault!`,
+                    result: `Real profit of $${profitAmount.toFixed(2)} (${solAmount.toFixed(6)} SOL) transferred to your vault!`,
                     tx: transferResult.signature,
                 }]);
             } else {

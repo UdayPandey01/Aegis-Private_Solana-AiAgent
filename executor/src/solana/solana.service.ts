@@ -196,8 +196,58 @@ export class SolanaService {
     }
   }
 
+  async transferSOLToVault(userWalletAddress: string, lamports: number): Promise<{ success: boolean; signature?: string; error?: string }> {
+    try {
+      this.logger.log(`Transferring ${lamports} lamports (${lamports / 1000000000} SOL) to user vault: ${userWalletAddress}`);
+
+      // Check if executor has enough SOL
+      const balance = await this.provider.connection.getBalance(this.executorKeypair.publicKey);
+      if (balance < lamports + 5000) { // Keep 5000 lamports for fees
+        this.logger.warn(`Insufficient SOL balance. Available: ${balance} lamports, Required: ${lamports + 5000} lamports`);
+        return { success: false, error: 'Insufficient SOL balance for profit transfer' };
+      }
+
+      // Get user's vault PDA
+      const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), new PublicKey(userWalletAddress).toBuffer()],
+        this.program.programId
+      );
+
+      // Create SOL transfer instruction
+      const transferIx = SystemProgram.transfer({
+        fromPubkey: this.executorKeypair.publicKey,
+        toPubkey: vaultPda,
+        lamports: lamports,
+      });
+
+      // Build and sign transaction
+      const latestBlockhash = await this.provider.connection.getLatestBlockhash();
+      const tx = new anchor.web3.Transaction();
+      tx.add(transferIx);
+      tx.recentBlockhash = latestBlockhash.blockhash;
+      tx.feePayer = this.executorKeypair.publicKey;
+      tx.sign(this.executorKeypair);
+
+      // Send transaction
+      const signature = await this.provider.connection.sendTransaction(tx, [this.executorKeypair], {
+        skipPreflight: false,
+        maxRetries: 3,
+        preflightCommitment: 'confirmed'
+      });
+
+      this.logger.log(`✅ SOL profit transfer successful. Signature: ${signature}`);
+      this.logger.log(`View on explorer: https://explorer.solana.com/tx/${signature}?cluster=devnet`);
+
+      return { success: true, signature };
+
+    } catch (error) {
+      this.logger.error('Failed to transfer SOL to vault:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   /**
-   * Transfer real USDC to user's vault as profit
+   * Transfer real USDC to user's vault as profit (legacy method)
    */
   async transferUSDCToVault(userWalletAddress: string, usdcAmount: number): Promise<{ success: boolean; signature?: string; error?: string }> {
     try {
