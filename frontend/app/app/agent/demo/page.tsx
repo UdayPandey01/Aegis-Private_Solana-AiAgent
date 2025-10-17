@@ -286,7 +286,9 @@ function AgentStatusPageContent() {
 
     } catch (error) {
       console.error('Trade execution failed:', error);
-      toast.error("Trade Failed", "Please try again");
+      toast.error("Trade Failed", {
+        description: "Please try again"
+      });
     }
   };
 
