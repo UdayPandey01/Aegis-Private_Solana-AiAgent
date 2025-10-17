@@ -528,6 +528,9 @@ export class JobsService implements OnModuleInit {
         const agentId = `${jobId}_${userWalletAddress}`;
         let iteration = 0;
 
+        this.logger.log(`🚀 STARTING continuous agent ${agentId} with parameters:`, parameters);
+        this.logger.log(`🔧 Demo mode is ENABLED - trades will execute every 5th iteration`);
+
         while (this.runningAgents.get(agentId)) {
             iteration++;
             this.logger.log(`Agent ${agentId} - Iteration ${iteration}: Searching for opportunities...`);
@@ -888,6 +891,8 @@ export class JobsService implements OnModuleInit {
 
     async restartAgent(jobId: number, userWalletAddress: string): Promise<boolean> {
         const agentId = `${jobId}_${userWalletAddress}`;
+
+        this.logger.log(`🔄 RESTART AGENT called for ${agentId}`);
 
         try {
             const job = await this.prisma.job.findFirst({
