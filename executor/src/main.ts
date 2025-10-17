@@ -4,16 +4,31 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Remove trailing slash from FRONTEND_URL if present
-  const frontendUrl = (process.env.FRONTEND_URL || "https://aegis-private-solana-ai-agent.vercel.app").replace(/\/$/, '');
+  const allowedOrigins = [
+    'https://aegis-private-solana-ai-agent.vercel.app',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'https://oyster-app-9rhn5.ondigitalocean.app'
+  ];
+
+  if (process.env.FRONTEND_URL) {
+    const frontendUrl = process.env.FRONTEND_URL.replace(/\/$/, '');
+    if (!allowedOrigins.includes(frontendUrl)) {
+      allowedOrigins.push(frontendUrl);
+    }
+  }
 
   console.log(`🔧 CORS Configuration:`);
   console.log(`   - FRONTEND_URL env: ${process.env.FRONTEND_URL}`);
-  console.log(`   - Configured origin: ${frontendUrl}`);
+  console.log(`   - Allowed origins: ${allowedOrigins.join(', ')}`);
 
   app.enableCors({
-    origin: frontendUrl || '*',
+    origin: allowedOrigins,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
   const port = process.env.PORT || 3001;
   await app.listen(port);
