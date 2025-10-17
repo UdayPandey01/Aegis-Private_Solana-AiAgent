@@ -723,7 +723,7 @@ function AgentStatusPageContent() {
                           <p className="text-slate-400 break-words overflow-wrap-anywhere text-sm">{log.result}</p>
                         </div>
                         {log.tx && (
-                          <a href={`https://explorer.solana.com/tx/${log.tx}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white flex-shrink-0" title={`View transaction: ${log.tx}`}>
+                          <a href={log.tx} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white flex-shrink-0" title={`View transaction on Solana Explorer`}>
                             <ExternalLink className="h-4 w-4" />
                           </a>
                         )}
