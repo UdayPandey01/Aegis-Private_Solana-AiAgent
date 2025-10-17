@@ -77,24 +77,6 @@ export default function DashboardPage() {
           return hasChanged ? userJobs : prev;
         });
 
-        // Auto-restart agents that are marked as RUNNING but may have stopped
-        const runningAgents = userJobs.filter(job => job.status === 'RUNNING');
-        for (const agent of runningAgents) {
-          try {
-            console.log(`Checking if agent ${agent.id} is actually running...`);
-            const statusResponse = await axios.get(API_ENDPOINTS.jobStatus(agent.id.toString()), {
-              params: { walletAddress: publicKey.toBase58() }
-            });
-
-            if (!statusResponse.data.isRunning) {
-              console.log(`Agent ${agent.id} marked as RUNNING but not actually running. Auto-restarting...`);
-              await axios.post(API_ENDPOINTS.restartJob(agent.id.toString(), publicKey.toBase58()));
-              console.log(`✅ Auto-restarted agent ${agent.id}`);
-            }
-          } catch (error) {
-            console.error(`Failed to check/restart agent ${agent.id}:`, error);
-          }
-        }
 
         const totalPnl = userJobs.reduce((acc, job) => {
           console.log("Processing job result:", job.result);
