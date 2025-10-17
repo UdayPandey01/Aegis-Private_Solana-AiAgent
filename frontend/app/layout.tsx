@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Syncopate, Share_Tech_Mono } from 'next/font/google';
 import { SolanaProvider } from '@/components/WalletContextProvider';
+import { Toaster } from '@/components/ui/sonner';
 
 const syncopate = Syncopate({
   subsets: ['latin'],
@@ -39,6 +40,7 @@ export default function RootLayout({
         >
           <SolanaProvider>
             {children}
+            <Toaster />
           </SolanaProvider>
         </ThemeProvider>
       </body>

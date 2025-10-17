@@ -17,8 +17,9 @@ import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js"
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT } from "@solana/spl-token"
 import idl from "../../../src/idl/onchain_program.json";
 import type { OnchainProgram } from "../../../src/types/onchain_program";
+import { useToastNotifications } from "@/hooks/use-toast-notifications";
 
-const SOL_MINT = NATIVE_MINT; // This is the wrapped SOL mint address
+const SOL_MINT = NATIVE_MINT;
 const USDC_MINT = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
 
 export default function VaultPage() {
@@ -31,6 +32,7 @@ export default function VaultPage() {
   const [depositAmount, setDepositAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [vaultExists, setVaultExists] = useState(false);
+  const { showSuccess, showError, showWarning, showInfo } = useToastNotifications();
 
   const program = useMemo(() => {
     if (wallet.publicKey) {
@@ -110,17 +112,17 @@ export default function VaultPage() {
         });
 
       console.log("Vault initialized successfully!", `https://explorer.solana.com/tx/${tx}?cluster=devnet`);
-      alert("Vault created! It may take a moment for the balance to update.");
+      showSuccess("Vault created!", "It may take a moment for the balance to update.");
       setTimeout(fetchVaultBalance, 3000);
     } catch (error) {
       console.error("Failed to initialize vault:", error);
 
       if (error.message?.includes("TransactionExpiredTimeoutError")) {
-        alert("Transaction timed out but may have succeeded. Please refresh the page and check if your vault was created. If not, try again.");
+        showWarning("Transaction timed out", "It may have succeeded. Please refresh the page and check if your vault was created. If not, try again.");
       } else if (error.message?.includes("already in use")) {
-        alert("Vault already exists! Please refresh the page.");
+        showInfo("Vault already exists!", "Please refresh the page.");
       } else {
-        alert(`Failed to create vault: ${error.message}`);
+        showError("Failed to create vault", error.message);
       }
     } finally {
       setIsLoading(false);
@@ -378,6 +380,11 @@ export default function VaultPage() {
         } as any)
         .transaction();
 
+      // Set fee payer and recent blockhash for simulation
+      const { blockhash } = await connection.getLatestBlockhash();
+      depositTx.recentBlockhash = blockhash;
+      depositTx.feePayer = publicKey;
+
       // Simulate the transaction first to catch any errors
       console.log("Simulating deposit transaction...");
       const simulation = await connection.simulateTransaction(depositTx);
@@ -397,7 +404,7 @@ export default function VaultPage() {
       try {
         await connection.confirmTransaction(txSig, "confirmed");
         console.log("Deposit confirmed successfully!");
-        alert("Deposit successful!");
+        showSuccess("Deposit successful!");
         depositSuccessful = true;
       } catch (depositConfirmationError) {
         console.log("Deposit confirmation timed out, checking status via polling...");
@@ -416,7 +423,7 @@ export default function VaultPage() {
               }
               confirmed = true;
               console.log("Deposit confirmed successfully via polling!");
-              alert("Deposit successful! (verified via polling)");
+              showSuccess("Deposit successful!", "Verified via polling");
               depositSuccessful = true;
               break;
             }
@@ -440,7 +447,16 @@ export default function VaultPage() {
       }
     } catch (error) {
       console.error("Failed to deposit:", error);
-      alert("Deposit failed. Check the console for details.");
+
+      if (error.message?.includes("TransactionExpiredTimeoutError")) {
+        showWarning("Transaction timed out", "It may have succeeded. Please refresh the page and check your balance. If not, try again.");
+      } else if (error.message?.includes("insufficient funds")) {
+        showError("Insufficient SOL balance", "Please add more SOL to your wallet for deposit.");
+      } else if (error.message?.includes("Transaction fee payer required")) {
+        showError("Transaction configuration error", "Please try again.");
+      } else {
+        showError("Deposit failed", error.message);
+      }
     } finally {
       setIsLoading(false);
       setDepositAmount("");
@@ -473,14 +489,69 @@ export default function VaultPage() {
           solMint: SOL_MINT,
           usdcMint: USDC_MINT,
         } as any)
-        .rpc();
+        .rpc({
+          skipPreflight: false,
+          commitment: "confirmed",
+          maxRetries: 3,
+          preflightCommitment: "confirmed"
+        });
 
-      await connection.confirmTransaction(tx, 'confirmed');
-      alert("Withdrawal successful!");
-      fetchVaultBalance();
+      console.log("Withdraw TX:", `https://explorer.solana.com/tx/${tx}?cluster=devnet`);
+
+      // Confirm with robust error handling
+      let withdrawSuccessful = false;
+      try {
+        await connection.confirmTransaction(tx, 'confirmed');
+        console.log("Withdrawal confirmed successfully!");
+        showSuccess("Withdrawal successful!");
+        withdrawSuccessful = true;
+      } catch (withdrawConfirmationError) {
+        console.log("Withdrawal confirmation timed out, checking status...");
+
+        // Check if transaction actually succeeded
+        let attempts = 0;
+        const maxAttempts = 10;
+        let confirmed = false;
+
+        while (attempts < maxAttempts && !confirmed) {
+          try {
+            const status = await connection.getSignatureStatus(tx);
+            if (status.value?.confirmationStatus === 'confirmed' || status.value?.confirmationStatus === 'finalized') {
+              if (status.value.err) {
+                throw new Error(`Transaction failed: ${JSON.stringify(status.value.err)}`);
+              }
+              confirmed = true;
+              console.log("Withdrawal confirmed successfully (verified via polling)");
+              showSuccess("Withdrawal successful!", "Verified via polling");
+              withdrawSuccessful = true;
+              break;
+            }
+          } catch (pollError) {
+            console.log(`Polling attempt ${attempts + 1} failed:`, pollError);
+          }
+
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        if (!confirmed) {
+          throw new Error("Withdrawal transaction confirmation timed out. Please check the transaction status manually.");
+        }
+      }
+
+      if (withdrawSuccessful) {
+        fetchVaultBalance();
+      }
     } catch (error) {
       console.error("Failed to withdraw:", error);
-      alert("Withdrawal failed. Check the console for details.");
+
+      if (error.message?.includes("TransactionExpiredTimeoutError")) {
+        showWarning("Transaction timed out", "It may have succeeded. Please refresh the page and check your balance. If not, try again.");
+      } else if (error.message?.includes("insufficient funds")) {
+        showError("Insufficient funds", "Not enough funds in vault for withdrawal.");
+      } else {
+        showError("Withdrawal failed", error.message);
+      }
     } finally {
       setIsLoading(false);
       setWithdrawAmount("");

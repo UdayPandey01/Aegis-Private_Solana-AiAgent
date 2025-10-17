@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { API_ENDPOINTS } from "@/lib/api";
 import bs58 from "bs58";
+import { toast } from "sonner";
 
 export function useAuth() {
     const { publicKey, signMessage, connected } = useWallet();
@@ -19,7 +20,6 @@ export function useAuth() {
             return;
         }
 
-        // Check if already authenticated for this wallet
         const storedToken = localStorage.getItem(`auth_token_${publicKey.toBase58()}`);
         if (storedToken) {
             setAuthToken(storedToken);
@@ -30,13 +30,10 @@ export function useAuth() {
         try {
             setIsAuthenticating(true);
 
-            // Step 1: Request challenge message from backend
             const { data: { message } } = await axios.post(
                 `${API_ENDPOINTS.base}/auth/request-message`,
                 { publicKey: publicKey.toBase58() }
             );
-
-            // Step 2: Ask user to sign the message
             const messageBytes = new TextEncoder().encode(message);
             const signature = await signMessage(messageBytes);
             const signatureBase58 = bs58.encode(signature);
@@ -63,9 +60,9 @@ export function useAuth() {
 
             // Show user-friendly error
             if (axios.isAxiosError(error)) {
-                alert(`Authentication failed: ${error.response?.data?.message || error.message}`);
+                toast.error(`Authentication failed: ${error.response?.data?.message || error.message}`);
             } else {
-                alert("Authentication failed. Please try again.");
+                toast.error("Authentication failed. Please try again.");
             }
         } finally {
             setIsAuthenticating(false);

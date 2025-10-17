@@ -10,6 +10,7 @@ import axios from "axios"
 import { API_ENDPOINTS } from "@/lib/api"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { useVaultBalance } from "@/hooks/useVaultBalance"
+import { useToastNotifications } from "@/hooks/use-toast-notifications"
 
 type Agent = {
   id: number;
@@ -31,6 +32,7 @@ export default function DashboardPage() {
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { showSuccess, showError, showWarning } = useToastNotifications();
 
   const { balance: vaultBalance, isLoading: vaultLoading } = useVaultBalance();
 
@@ -137,7 +139,7 @@ export default function DashboardPage() {
       console.log(`Agent ${agentId} deleted successfully`);
     } catch (error) {
       console.error('Failed to delete agent:', error);
-      alert('Failed to delete agent. Please try again.');
+      showError('Failed to delete agent', 'Please try again.');
     } finally {
       setIsDeleting(false);
     }

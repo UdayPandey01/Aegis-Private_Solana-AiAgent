@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 import axios from "axios"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { API_ENDPOINTS } from "@/lib/api"
+import { useToastNotifications } from "@/hooks/use-toast-notifications"
 
 const templates = [
   { id: "arbitrage", icon: ArrowUpDown, title: "Cross-DEX Arbitrage", description: "Exploit price differences across Solana DEXs instantly and privately.", features: ["Multi-DEX scanning", "Gas optimization", "MEV protection"] },
@@ -27,12 +28,13 @@ export default function MarketplacePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter()
   const { publicKey, connected } = useWallet();
+  const { showSuccess, showError, showWarning } = useToastNotifications();
 
   const handleLaunchAgent = async (params: any) => {
     console.log('Launch agent clicked - Wallet status:', { publicKey: publicKey?.toBase58(), connected });
 
     if (!publicKey || !connected) {
-      alert("Please connect your wallet first! Go to the header and click 'Select Wallet'.");
+      showWarning("Wallet not connected", "Please connect your wallet first! Go to the header and click 'Select Wallet'.");
       return;
     }
 
@@ -50,7 +52,7 @@ export default function MarketplacePage() {
       router.push("/app/dashboard");
     } catch (error) {
       console.error("Failed to launch agent:", error);
-      alert("Failed to launch agent. Check the console for details.");
+      showError("Failed to launch agent", "Check the console for details.");
     } finally {
       setIsSubmitting(false);
     }
@@ -130,7 +132,7 @@ export default function MarketplacePage() {
                     <DialogHeader>
                       <DialogTitle className="font-heading text-2xl">Configure {selectedTemplate?.title}</DialogTitle>
                       <DialogDescription className="font-sans text-slate-400">
-                        Set your agent's secret parameters. This data is protected end-to-end.
+                        Set your agent&apos;s secret parameters. This data is protected end-to-end.
                       </DialogDescription>
                     </DialogHeader>
 

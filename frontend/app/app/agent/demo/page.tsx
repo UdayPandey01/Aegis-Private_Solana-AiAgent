@@ -14,6 +14,7 @@ import { useVaultBalance } from "@/hooks/useVaultBalance"
 import { useSSE } from "@/hooks/useSSE"
 import axios from "axios"
 import { API_ENDPOINTS } from "@/lib/api"
+import { useToastNotifications } from "@/hooks/use-toast-notifications"
 
 type Agent = {
   id: number;
@@ -47,6 +48,7 @@ function AgentStatusPageContent() {
   const { publicKey } = useWallet();
   const { balance: vaultBalance } = useVaultBalance();
   const { isConnected, connect, disconnect, addEventListener, removeEventListener } = useSSE();
+  const { showSuccess, showError, showWarning } = useToastNotifications();
 
   const agentId = searchParams.get('id');
 
@@ -360,7 +362,7 @@ function AgentStatusPageContent() {
                     window.location.reload();
                   } catch (error) {
                     console.error('Failed to restart agent:', error);
-                    alert('Failed to restart agent. Please try again.');
+                    showError('Failed to restart agent', 'Please try again.');
                   }
                 }}
                 variant="outline"

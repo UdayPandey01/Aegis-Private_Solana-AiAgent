@@ -1,4 +1,3 @@
-// filename: frontend/components/VaultManager.tsx
 "use client";
 
 import { useState } from "react";
@@ -9,6 +8,7 @@ import type { OnchainProgram } from "../src/types/onchain_program";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Button } from "@/components/ui/button";
+import { useToastNotifications } from "@/hooks/use-toast-notifications";
 
 const SOL_MINT = new PublicKey("So11111111111111111111111111111111111111112");
 const USDC_MINT = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
@@ -17,10 +17,11 @@ export const VaultManager = () => {
     const { connection } = useConnection();
     const wallet = useWallet();
     const [isLoading, setIsLoading] = useState(false);
+    const { showSuccess, showError, showWarning } = useToastNotifications();
 
     const initializeVault = async () => {
         if (!wallet.publicKey || !wallet.signTransaction) {
-            alert("Please connect your wallet first.");
+            showWarning("Wallet not connected", "Please connect your wallet first.");
             return;
         }
 
@@ -71,10 +72,10 @@ export const VaultManager = () => {
                 .rpc({ skipPreflight: false, commitment: "finalized" });
 
             console.log("Vault initialized successfully!", `https://explorer.solana.com/tx/${tx}?cluster=devnet`);
-            alert("Vault created successfully! Check the console for the transaction link.");
+            showSuccess("Vault created successfully!", "Check the console for the transaction link.");
         } catch (error) {
             console.error("Failed to initialize vault:", error);
-            alert(`Failed to create vault: ${error.message || "Unknown error"}`);
+            showError("Failed to create vault", error.message || "Unknown error");
         } finally {
             setIsLoading(false);
         }
