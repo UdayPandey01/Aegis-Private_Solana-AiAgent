@@ -102,14 +102,26 @@ export default function VaultPage() {
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY
         } as any)
-        .rpc({ skipPreflight: false, commitment: "finalized" });
+        .rpc({
+          skipPreflight: false,
+          commitment: "confirmed",
+          maxRetries: 3,
+          preflightCommitment: "confirmed"
+        });
 
       console.log("Vault initialized successfully!", `https://explorer.solana.com/tx/${tx}?cluster=devnet`);
       alert("Vault created! It may take a moment for the balance to update.");
       setTimeout(fetchVaultBalance, 3000);
     } catch (error) {
       console.error("Failed to initialize vault:", error);
-      alert("Failed to create vault.");
+
+      if (error.message?.includes("TransactionExpiredTimeoutError")) {
+        alert("Transaction timed out but may have succeeded. Please refresh the page and check if your vault was created. If not, try again.");
+      } else if (error.message?.includes("already in use")) {
+        alert("Vault already exists! Please refresh the page.");
+      } else {
+        alert(`Failed to create vault: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
