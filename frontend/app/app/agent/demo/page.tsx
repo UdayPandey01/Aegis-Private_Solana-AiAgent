@@ -95,7 +95,7 @@ function AgentStatusPageContent() {
     }
   }, []);
 
-  // Simulation logic - shows realistic logs every 8-15 seconds, executes trade after 1-7 attempts
+  // Simulation logic - shows realistic logs every 10 seconds, executes trades randomly, keeps running
   useEffect(() => {
     if (!isSimulating || !agent) return;
 
@@ -142,17 +142,37 @@ function AgentStatusPageContent() {
       "Risk threshold exceeded"
     ];
 
-    // Random number of attempts before trade (1-7)
-    const maxAttempts = Math.floor(Math.random() * 7) + 1;
-    let currentAttempt = 0;
+    let iterationCount = 0;
 
     const addLog = () => {
-      currentAttempt++;
+      iterationCount++;
 
       let logMessage: string;
       let action: string;
 
-      if (currentAttempt < maxAttempts) {
+      // 20% chance of executing a trade every iteration
+      const shouldExecuteTrade = Math.random() < 0.2;
+
+      if (shouldExecuteTrade) {
+        // Show opportunity found and execute trade
+        logMessage = opportunityLogs[Math.floor(Math.random() * opportunityLogs.length)];
+        action = "Opportunity Found";
+
+        const newLog: ExecutionLog = {
+          id: Date.now(),
+          timestamp: new Date().toLocaleTimeString(),
+          action: action,
+          result: logMessage,
+          tx: null
+        };
+
+        setLogs(prevLogs => [newLog, ...prevLogs.slice(0, 9)]);
+
+        // Execute trade after 2 seconds
+        setTimeout(() => {
+          executeRealTrade();
+        }, 2000);
+      } else {
         // Show analysis or no opportunity logs
         if (Math.random() < 0.3) {
           // 30% chance of no opportunity
@@ -163,50 +183,31 @@ function AgentStatusPageContent() {
           logMessage = marketAnalysisLogs[Math.floor(Math.random() * marketAnalysisLogs.length)];
           action = "Market Analysis";
         }
-      } else {
-        // Show opportunity found and execute trade
-        logMessage = opportunityLogs[Math.floor(Math.random() * opportunityLogs.length)];
-        action = "Opportunity Found";
-      }
 
-      const newLog: ExecutionLog = {
-        id: Date.now(),
-        timestamp: new Date().toLocaleTimeString(),
-        action: action,
-        result: logMessage,
-        tx: null
-      };
+        const newLog: ExecutionLog = {
+          id: Date.now(),
+          timestamp: new Date().toLocaleTimeString(),
+          action: action,
+          result: logMessage,
+          tx: null
+        };
 
-      setLogs(prevLogs => [newLog, ...prevLogs.slice(0, 9)]);
-
-      if (currentAttempt >= maxAttempts) {
-        // Execute trade after random attempts
-        setTimeout(() => {
-          executeRealTrade();
-          setIsSimulating(false);
-          setSimulationCount(0);
-        }, 2000); // 2 second delay before trade execution
+        setLogs(prevLogs => [newLog, ...prevLogs.slice(0, 9)]);
       }
     };
 
     // Add first log immediately
     addLog();
 
-    // Set up interval with random timing (8-15 seconds)
-    const scheduleNextLog = () => {
-      const randomDelay = Math.floor(Math.random() * 7000) + 8000; // 8-15 seconds
-      setTimeout(() => {
-        if (isSimulating && currentAttempt < maxAttempts) {
-          addLog();
-          scheduleNextLog();
-        }
-      }, randomDelay);
-    };
-
-    scheduleNextLog();
+    // Set up continuous interval - logs every 10 seconds
+    const interval = setInterval(() => {
+      if (isSimulating) {
+        addLog();
+      }
+    }, 10000); // Exactly 10 seconds
 
     return () => {
-      // Cleanup handled by component unmount
+      clearInterval(interval);
     };
   }, [isSimulating, agent]);
 
@@ -243,7 +244,17 @@ function AgentStatusPageContent() {
 
       // Step 3: Trade execution (after 2 seconds)
       setTimeout(() => {
-        const txHash = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        // Generate a realistic Solana transaction hash (base58, 88 characters)
+        const generateTxHash = () => {
+          const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+          let result = '';
+          for (let i = 0; i < 88; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return result;
+        };
+
+        const txHash = generateTxHash();
 
         const tradeLog: ExecutionLog = {
           id: Date.now(),
@@ -625,7 +636,7 @@ function AgentStatusPageContent() {
                   onClick={() => {
                     setIsSimulating(false);
                     setSimulationCount(0);
-                    showWarning('Agent stopped', 'Monitoring ended');
+                    showWarning('Agent stopped', 'Continuous monitoring ended');
                   }}
                   variant="destructive"
                   className="font-sans flex items-center gap-2 w-full sm:w-auto"
