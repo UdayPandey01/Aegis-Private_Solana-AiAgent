@@ -224,12 +224,20 @@ export default function DashboardPage() {
           <div className="bg-neutral-900 border border-white/10 rounded-2xl">
             <div className="p-6 flex flex-row items-center justify-between">
               <h2 className="font-heading text-xl font-bold text-slate-50">My Active Agents</h2>
-              <Button asChild variant="outline" className="font-sans bg-transparent border-white/20 hover:bg-white/10 hover:text-white">
-                <a href="/app/marketplace">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Launch New Agent
-                </a>
-              </Button>
+              <div className="flex gap-3">
+                <Button asChild variant="outline" className="font-sans bg-transparent border-white/20 hover:bg-white/10 hover:text-white">
+                  <a href="/app/vault">
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Go to Vault
+                  </a>
+                </Button>
+                <Button asChild variant="outline" className="font-sans bg-transparent border-white/20 hover:bg-white/10 hover:text-white">
+                  <a href="/app/marketplace">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Launch New Agent
+                  </a>
+                </Button>
+              </div>
             </div>
 
             <div className="border-t border-white/10">
