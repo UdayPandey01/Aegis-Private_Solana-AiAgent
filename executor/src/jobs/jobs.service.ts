@@ -23,14 +23,10 @@ export class JobsService implements OnModuleInit {
 
     async onModuleInit() {
         this.logger.log('JobsService initialized');
-        this.logger.warn('⚠️  Auto-restore disabled to save memory and credits');
-        this.logger.warn('💡 Agents must be manually restarted from the dashboard');
+        this.logger.log('🔄 Auto-restore enabled - restoring running agents...');
 
-        // DISABLED TO SAVE MEMORY AND CREDITS ON FREE TIER (~150MB saved)
-        // If you upgrade to a paid plan, uncomment the code below to enable auto-restore
-        /*
         this.logger.log('Restoring running agents...');
-        
+
         try {
             const runningJobs = await this.prisma.job.findMany({
                 where: {
@@ -65,7 +61,6 @@ export class JobsService implements OnModuleInit {
         } catch (error) {
             this.logger.error('Failed to restore running agents:', error);
         }
-        */
     }
 
 
