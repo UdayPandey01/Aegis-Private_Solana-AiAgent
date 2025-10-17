@@ -547,7 +547,7 @@ export class JobsService implements OnModuleInit {
                 }]);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 10000));
+            await new Promise(resolve => setTimeout(resolve, 10000)); // 10 seconds between iterations
         }
 
         this.logger.log(`Continuous agent ${agentId} stopped`);
@@ -744,13 +744,15 @@ export class JobsService implements OnModuleInit {
         // Check if we should use demo mode (for hackathon presentation)
         const isDemoMode = true; // Force enable demo mode for testing
 
-        this.logger.log(`Demo mode check: DEMO_MODE=${process.env.DEMO_MODE}, NODE_ENV=${process.env.NODE_ENV}, isDemoMode=${isDemoMode}, iteration=${iteration}`);
+        this.logger.log(`🔍 DEBUG: iteration=${iteration}, isDemoMode=${isDemoMode}, iteration % 5 = ${iteration % 5}`);
 
         if (isDemoMode && iteration % 5 === 0) {
             // Generate mock profitable trade every 5th iteration for demo
-            this.logger.log(`🎯 DEMO MODE: Executing mock trade for iteration ${iteration}`);
+            this.logger.log(`🎯 DEMO MODE: Executing mock trade for iteration ${iteration} (every 5th iteration)`);
             await this.executeMockTrade(jobId, userWalletAddress, parameters, iteration);
             return;
+        } else {
+            this.logger.log(`⏳ DEMO MODE: Skipping trade for iteration ${iteration} (not 5th iteration)`);
         }
 
         // Check executor balance
