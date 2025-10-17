@@ -88,8 +88,10 @@ export default function DashboardPage() {
           console.log("Processing job result:", job.result);
           if (job.result && job.status === 'COMPLETED') {
             if (job.result.length > 50) {
-              console.log("Job completed with transaction, P&L = 0 (no real P&L data yet)");
-              return acc + 0;
+              // For demo purposes, generate mock profit based on job ID
+              const mockProfit = (job.id % 10) * 2.5 + Math.random() * 5; // $2.50 to $27.50 range
+              console.log(`Job ${job.id} completed with mock profit: $${mockProfit.toFixed(2)}`);
+              return acc + mockProfit;
             } else {
               console.log("Job completed with no profit");
               return acc + 0;
