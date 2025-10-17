@@ -742,10 +742,13 @@ export class JobsService implements OnModuleInit {
         }]);
 
         // Check if we should use demo mode (for hackathon presentation)
-        const isDemoMode = process.env.DEMO_MODE === 'true' || process.env.NODE_ENV === 'development';
+        const isDemoMode = true; // Force enable demo mode for testing
+
+        this.logger.log(`Demo mode check: DEMO_MODE=${process.env.DEMO_MODE}, NODE_ENV=${process.env.NODE_ENV}, isDemoMode=${isDemoMode}, iteration=${iteration}`);
 
         if (isDemoMode && iteration % 5 === 0) {
             // Generate mock profitable trade every 5th iteration for demo
+            this.logger.log(`🎯 DEMO MODE: Executing mock trade for iteration ${iteration}`);
             await this.executeMockTrade(jobId, userWalletAddress, parameters, iteration);
             return;
         }
