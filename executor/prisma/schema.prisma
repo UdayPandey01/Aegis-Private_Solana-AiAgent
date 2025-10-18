@@ -35,4 +35,19 @@ model Job {
 
   user        User     @relation(fields: [userWalletAddress], references: [walletAddress])
   userWalletAddress String
+  executionLogs ExecutionLog[]
+}
+
+model ExecutionLog {
+  id          Int      @id @default(autoincrement())
+  jobId       BigInt
+  userWalletAddress String
+  timestamp   DateTime @default(now())
+  action      String
+  result      String
+  tx          String?
+  
+  job         Job      @relation(fields: [jobId], references: [jobId])
+  
+  @@index([jobId, userWalletAddress])
 }
