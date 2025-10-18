@@ -1056,8 +1056,8 @@ export class JobsService implements OnModuleInit {
             return [];
         }
 
-    // Fetch actual execution logs from database
-        const executionLogs = await (this.prisma as any).executionLog.findMany({
+        // Fetch actual execution logs from database
+        const executionLogs = await this.prisma.executionLog.findMany({
             where: {
                 jobId: BigInt(jobId),
                 userWalletAddress
@@ -1070,6 +1070,7 @@ export class JobsService implements OnModuleInit {
 
         this.logger.log(`Found ${executionLogs.length} execution logs for job ${jobId}`);
 
+        // Convert database logs to frontend format
         const logs = executionLogs.map((log, index) => ({
             id: log.id,
             timestamp: this.formatTimestamp(log.timestamp),
