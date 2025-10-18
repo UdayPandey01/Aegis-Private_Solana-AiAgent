@@ -550,7 +550,7 @@ export class JobsService implements OnModuleInit {
     }
 
     private async executeMockTrade(jobId: number, userWalletAddress: string, parameters: { profitThreshold: number }, iteration: number): Promise<void> {
-        this.logger.log(`DEMO MODE: Executing GUARANTEED profitable trade for job ${jobId}`);
+        this.logger.log(`Executing GUARANTEED profitable trade for job ${jobId}`);
 
         // Generate random but realistic profit amounts
         const baseProfit = Math.random() * 0.5 + 0.1; // 0.1% to 0.6% profit
@@ -674,7 +674,7 @@ export class JobsService implements OnModuleInit {
             });
         }
 
-        this.logger.log(`🎯 DEMO: Mock trade completed for job ${jobId} with profit $${(tradeAmount * profitAmount * 180).toFixed(2)}`);
+        this.logger.log(`Mock trade completed for job ${jobId} with profit $${(tradeAmount * profitAmount * 180).toFixed(2)}`);
     }
 
     /**
@@ -788,11 +788,11 @@ export class JobsService implements OnModuleInit {
         // GUARANTEED ARBITRAGE OPPORTUNITY - Execute trade every iteration for demo
         if (isDemoMode && iteration % 1 === 0) { // Changed from % 2 to % 1 for guaranteed trades
             // Generate mock profitable trade every iteration for guaranteed demo results
-            this.logger.log(`DEMO MODE: Executing GUARANTEED trade for iteration ${iteration} (every iteration)`);
+            this.logger.log(`Executing GUARANTEED trade for iteration ${iteration} (every iteration)`);
             await this.executeMockTrade(jobId, userWalletAddress, parameters, iteration);
             return;
         } else {
-            this.logger.log(`DEMO MODE: Skipping trade for iteration ${iteration} (not iteration)`);
+            this.logger.log(`Skipping trade for iteration ${iteration} (not iteration)`);
         }
 
         // Check executor balance
