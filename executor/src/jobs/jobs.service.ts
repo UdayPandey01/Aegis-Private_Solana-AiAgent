@@ -12,6 +12,22 @@ export class JobsService implements OnModuleInit {
     private runningAgents = new Map<string, boolean>();
     private agentLoops = new Map<string, Promise<void>>();
 
+    // Simple encoding/decoding for parameters (not secure, just obfuscation)
+    private encodeParameters(params: any): string {
+        const json = JSON.stringify(params);
+        return Buffer.from(json).toString('base64');
+    }
+
+    private decodeParameters(encoded: string): any {
+        try {
+            const json = Buffer.from(encoded, 'base64').toString('utf8');
+            return JSON.parse(json);
+        } catch (error) {
+            // Fallback to plain JSON for backward compatibility
+            return JSON.parse(encoded);
+        }
+    }
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly agentService: AgentService,
@@ -46,7 +62,7 @@ export class JobsService implements OnModuleInit {
                 let parameters = { profitThreshold: 0.5 };
                 try {
                     if (job.parameters) {
-                        parameters = JSON.parse(job.parameters);
+                        parameters = this.decodeParameters(job.parameters);
                     }
                 } catch (error) {
                     this.logger.warn(`Failed to parse parameters for agent ${agentId}, using defaults`);
@@ -489,7 +505,7 @@ export class JobsService implements OnModuleInit {
                     jobId: BigInt(jobId),
                     agentType: 'arbitrage',
                     status: 'RUNNING',
-                    parameters: JSON.stringify(parameters),
+                    parameters: this.encodeParameters(parameters),
                     user: {
                         connectOrCreate: {
                             where: { walletAddress: userWalletAddress },
@@ -505,7 +521,7 @@ export class JobsService implements OnModuleInit {
                 where: { id: job.id },
                 data: {
                     status: 'RUNNING',
-                    parameters: JSON.stringify(parameters)
+                    parameters: this.encodeParameters(parameters)
                 }
             });
             this.logger.log(`Updated database record for continuous agent ${agentId} to RUNNING`);
@@ -917,7 +933,7 @@ export class JobsService implements OnModuleInit {
             let parameters = { profitThreshold: 0.5 };
             try {
                 if (job.parameters) {
-                    parameters = JSON.parse(job.parameters);
+                    parameters = this.decodeParameters(job.parameters);
                 }
             } catch (error) {
                 this.logger.warn(`Failed to parse parameters for agent ${agentId}, using defaults`);
