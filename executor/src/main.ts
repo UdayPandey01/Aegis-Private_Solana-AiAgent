@@ -6,6 +6,8 @@ async function bootstrap() {
 
   const allowedOrigins = [
     'https://aegis-private-solana-ai-agent.vercel.app',
+    'https://www.aegisprotocol.app',
+    'https://aegisprotocol.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5500',
@@ -29,6 +31,14 @@ async function bootstrap() {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
   });
   const port = process.env.PORT || 3001;
   await app.listen(port);
