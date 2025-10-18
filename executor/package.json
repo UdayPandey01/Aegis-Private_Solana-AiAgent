@@ -12,7 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "npx prisma migrate deploy && npx prisma generate && node dist/main",
-    "start:prod:512mb": "npx prisma generate && node dist/main",
+    "start:prod:512mb": "npx prisma migrate deploy && npx prisma generate && node dist/main",
     "postinstall": "npx prisma generate",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
