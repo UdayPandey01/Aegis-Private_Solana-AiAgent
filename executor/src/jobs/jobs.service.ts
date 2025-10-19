@@ -37,9 +37,44 @@ export class JobsService implements OnModuleInit {
 
     async onModuleInit() {
         this.logger.log('JobsService initialized');
-        this.logger.warn('⚠️  Auto-restore disabled to save memory and credits');
-        this.logger.warn('💡 Agents must be manually restarted from the dashboard');
+        this.logger.log('🔄 Auto-restore enabled - restoring running agents...');
 
+        this.logger.log('Restoring running agents...');
+
+        try {
+            const runningJobs = await this.prisma.job.findMany({
+                where: {
+                    status: 'RUNNING'
+                }
+            });
+
+            this.logger.log(`Found ${runningJobs.length} agents marked as RUNNING`);
+
+            for (const job of runningJobs) {
+                const agentId = `${job.jobId}_${job.userWalletAddress}`;
+
+                let parameters = { profitThreshold: 0.5 };
+                try {
+                    if (job.parameters) {
+                        parameters = this.decodeParameters(job.parameters);
+                    }
+                } catch (error) {
+                    this.logger.warn(`Failed to parse parameters for agent ${agentId}, using defaults`);
+                }
+
+                this.logger.log(`Restarting agent ${agentId} with parameters:`, parameters);
+
+                this.runningAgents.set(agentId, true);
+                const loopPromise = this.runContinuousLoop(Number(job.jobId), job.userWalletAddress, parameters);
+                this.agentLoops.set(agentId, loopPromise);
+
+                this.logger.log(`Agent ${agentId} restored successfully`);
+            }
+
+            this.logger.log(`Restored ${runningJobs.length} running agents`);
+        } catch (error) {
+            this.logger.error('Failed to restore running agents:', error);
+        }
     }
 
 
@@ -522,7 +557,7 @@ export class JobsService implements OnModuleInit {
         let iteration = 0;
 
         this.logger.log(`STARTING continuous agent ${agentId} with parameters:`, parameters);
-        this.logger.log(`Demo mode is ENABLED - trades will execute randomly (20% chance per iteration)`);
+        this.logger.log(`Demo mode is ENABLED - trades will execute randomly (20% chance per iteration, 5s intervals)`);
 
         while (this.runningAgents.get(agentId)) {
             iteration++;
@@ -543,7 +578,7 @@ export class JobsService implements OnModuleInit {
                 }]);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 10000));
+            await new Promise(resolve => setTimeout(resolve, 5000)); // 5 seconds between iterations
         }
 
         this.logger.log(`Continuous agent ${agentId} stopped`);
