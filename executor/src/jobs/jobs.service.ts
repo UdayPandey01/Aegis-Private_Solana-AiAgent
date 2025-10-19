@@ -522,7 +522,7 @@ export class JobsService implements OnModuleInit {
         let iteration = 0;
 
         this.logger.log(`STARTING continuous agent ${agentId} with parameters:`, parameters);
-        this.logger.log(`Demo mode is ENABLED - trades will execute every iteration`);
+        this.logger.log(`Demo mode is ENABLED - trades will execute randomly (20% chance per iteration)`);
 
         while (this.runningAgents.get(agentId)) {
             iteration++;
@@ -543,7 +543,7 @@ export class JobsService implements OnModuleInit {
                 }]);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 5000)); // 5 seconds between iterations (faster for testing)
+            await new Promise(resolve => setTimeout(resolve, 10000));
         }
 
         this.logger.log(`Continuous agent ${agentId} stopped`);
@@ -783,16 +783,20 @@ export class JobsService implements OnModuleInit {
         // Check if we should use demo mode (for hackathon presentation)
         const isDemoMode = true; // Force enable demo mode for testing
 
-        this.logger.log(`DEBUG: iteration=${iteration}, isDemoMode=${isDemoMode}, iteration % 2 = ${iteration % 2}`);
+        this.logger.log(`DEBUG: iteration=${iteration}, isDemoMode=${isDemoMode}, looking for arbitrage opportunities...`);
 
-        // GUARANTEED ARBITRAGE OPPORTUNITY - Execute trade every iteration for demo
-        if (isDemoMode && iteration % 1 === 0) { // Changed from % 2 to % 1 for guaranteed trades
-            // Generate mock profitable trade every iteration for guaranteed demo results
-            this.logger.log(`Executing GUARANTEED trade for iteration ${iteration} (every iteration)`);
-            await this.executeMockTrade(jobId, userWalletAddress, parameters, iteration);
-            return;
-        } else {
-            this.logger.log(`Skipping trade for iteration ${iteration} (not iteration)`);
+        // RANDOM ARBITRAGE OPPORTUNITY - Execute trade randomly (1-5 attempts)
+        if (isDemoMode) {
+            // Random chance of finding a trade (20% chance per iteration)
+            const shouldFindTrade = Math.random() < 0.2;
+
+            if (shouldFindTrade) {
+                this.logger.log(`Arbitrage opportunity found for iteration ${iteration}`);
+                await this.executeMockTrade(jobId, userWalletAddress, parameters, iteration);
+                return;
+            } else {
+                this.logger.log(`No profitable opportunities found for iteration ${iteration}`);
+            }
         }
 
         // Check executor balance

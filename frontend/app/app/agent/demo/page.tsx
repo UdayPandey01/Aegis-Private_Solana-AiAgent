@@ -116,12 +116,11 @@ function AgentStatusPageContent() {
     // Fetch logs immediately
     fetchLogs();
 
-    // Set up interval to fetch logs every 5 seconds when agent is running
     const interval = setInterval(() => {
       if (isSimulating) {
         fetchLogs();
       }
-    }, 5000);
+    }, 10000);
 
     return () => {
       clearInterval(interval);
@@ -161,27 +160,15 @@ function AgentStatusPageContent() {
     if (!publicKey) return;
 
     try {
-      console.log(`Fetching execution logs for job ${agentId}`);
       const response = await axios.get(
         API_ENDPOINTS.executionLogs(publicKey.toBase58(), agentId)
       );
 
       const realLogs: ExecutionLog[] = response.data;
-      console.log("Real execution logs received:", realLogs);
-      console.log("Number of logs:", realLogs.length);
 
       if (realLogs.length > 0) {
-        realLogs.forEach((log, index) => {
-          console.log(`Log ${index + 1}:`, {
-            action: log.action,
-            result: log.result,
-            tx: log.tx,
-            timestamp: log.timestamp
-          });
-        });
         setLogs(realLogs);
       } else {
-        console.log("No logs returned from API - showing initial status log");
         setLogs([{
           id: 1,
           timestamp: new Date().toLocaleTimeString(),
@@ -213,19 +200,8 @@ function AgentStatusPageContent() {
         const selectedAgent = userJobs.find(job => job.id.toString() === agentId);
 
         if (selectedAgent) {
-          console.log("Found agent data:", selectedAgent);
-          console.log("Agent status:", selectedAgent.status);
-          console.log("Agent result:", selectedAgent.result);
-          console.log("Agent created at:", selectedAgent.createdAt);
-          console.log("Agent updated at:", selectedAgent.updatedAt);
-
           setAgent(selectedAgent);
           setIsRunning(selectedAgent.status === 'RUNNING' || selectedAgent.status === 'PROCESSING');
-
-          // Debug logging
-          console.log("Agent status from database:", selectedAgent.status);
-          console.log("Agent result from database:", selectedAgent.result);
-          console.log("Agent jobId for SSE:", selectedAgent.jobId);
 
           let pnl = 0;
           if (selectedAgent.result && selectedAgent.status === 'COMPLETED') {
@@ -235,7 +211,6 @@ function AgentStatusPageContent() {
               pnl = 0;
             }
           }
-          console.log("Calculated P&L from agent result:", pnl, "from result:", selectedAgent.result);
 
           setMetrics({
             totalPnL: pnl,
@@ -265,12 +240,9 @@ function AgentStatusPageContent() {
   useEffect(() => {
     if (!agent || !publicKey) return;
 
-    console.log('Setting up SSE connection for agent:', agent.id, 'jobId:', agent.jobId);
-
     connect(agent.jobId, publicKey.toBase58());
 
     const handleJobUpdate = (data: any) => {
-      console.log('Job update received:', data);
       setAgent(prev => prev ? { ...prev, status: data.status, result: data.result } : null);
 
       if (data.pnl !== undefined || data.tradesExecuted !== undefined) {
@@ -279,7 +251,6 @@ function AgentStatusPageContent() {
           totalPnL: data.pnl !== undefined ? data.pnl : prev.totalPnL,
           totalTrades: data.tradesExecuted !== undefined ? data.tradesExecuted : prev.totalTrades,
         }));
-        console.log('Updated metrics - PnL:', data.pnl, 'Trades:', data.tradesExecuted);
       }
 
       const newLog = {
@@ -294,8 +265,6 @@ function AgentStatusPageContent() {
     };
 
     const handleLogUpdate = (newLogs: any[]) => {
-      console.log('Log update received:', newLogs, 'count:', newLogs.length);
-
       setLogs(prev => {
         const existingMap = new Map(
           prev.map(log => [`${log.timestamp}:${log.action}`, log])
@@ -311,7 +280,6 @@ function AgentStatusPageContent() {
     };
 
     const handleChartUpdate = (newChartData: any[]) => {
-      console.log('Chart update received:', newChartData);
       setChartData(newChartData);
     };
 
@@ -437,9 +405,8 @@ function AgentStatusPageContent() {
                         },
                         method: 'POST'
                       });
-                      console.log('Real agent restarted successfully');
                     } catch (error) {
-                      console.log('Real agent restart failed, but simulation will continue');
+                      // Agent restart failed, but monitoring will continue
                     }
                   }}
                   variant="outline"
