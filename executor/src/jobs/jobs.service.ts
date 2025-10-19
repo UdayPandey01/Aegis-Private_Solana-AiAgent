@@ -526,7 +526,7 @@ export class JobsService implements OnModuleInit {
 
         while (this.runningAgents.get(agentId)) {
             iteration++;
-            this.logger.log(`Agent ${agentId} - Iteration ${iteration}: Searching for opportunities...`);
+            this.logger.log(`Agent ${agentId}: Searching for opportunities...`);
 
             try {
                 await this.searchForOpportunity(jobId, userWalletAddress, parameters, iteration);
@@ -550,7 +550,7 @@ export class JobsService implements OnModuleInit {
     }
 
     private async executeMockTrade(jobId: number, userWalletAddress: string, parameters: { profitThreshold: number }, iteration: number): Promise<void> {
-        this.logger.log(`Executing GUARANTEED profitable trade for job ${jobId}`);
+        this.logger.log(`Executing profitable trade for job ${jobId}`);
 
         // Generate random but realistic profit amounts
         const baseProfit = Math.random() * 0.5 + 0.1; // 0.1% to 0.6% profit
@@ -565,7 +565,7 @@ export class JobsService implements OnModuleInit {
             id: Date.now(),
             timestamp: this.formatTimestamp(),
             action: "Opportunity Found",
-            result: `GUARANTEED ARBITRAGE: Profitable opportunity detected! Expected profit: ${profitAmount.toFixed(4)}%`,
+            result: `Profitable opportunity detected! Expected profit: ${profitAmount.toFixed(4)}%`,
             tx: null,
         };
         await this.storeExecutionLog(jobId, userWalletAddress, opportunityLog);
@@ -634,7 +634,7 @@ export class JobsService implements OnModuleInit {
             id: Date.now() + 6,
             timestamp: this.formatTimestamp(),
             action: "Trade Completed",
-            result: `ARBITRAGE COMPLETED! Profit: $${(tradeAmount * profitAmount * 180).toFixed(2)} (${profitAmount.toFixed(4)}%) - REAL SOL TRANSFERRED!`,
+            result: `Arbitrage completed successfully! Profit: $${(tradeAmount * profitAmount * 180).toFixed(2)} (${profitAmount.toFixed(4)}%)`,
             tx: mockTxSignature,
         };
         await this.storeExecutionLog(jobId, userWalletAddress, tradeCompleteLog);
@@ -747,13 +747,13 @@ export class JobsService implements OnModuleInit {
             if (transferResult.success) {
                 this.logger.log(`✅ Real profit transfer successful: ${solAmount.toFixed(6)} SOL to ${userWalletAddress}`);
 
-                // Emit log about real money transfer
+                // Emit log about real money transfer with devnet explorer link
                 this.sseService.emitLogUpdate(userWalletAddress, userWalletAddress, [{
                     id: Date.now(),
                     timestamp: this.formatTimestamp(),
                     action: "Real Profit Transfer",
                     result: `Real profit of $${profitAmount.toFixed(2)} (${solAmount.toFixed(6)} SOL) transferred to your vault!`,
-                    tx: transferResult.signature,
+                    tx: `https://explorer.solana.com/tx/${transferResult.signature}?cluster=devnet`,
                 }]);
             } else {
                 this.logger.error(`❌ Real profit transfer failed: ${transferResult.error}`);
@@ -773,7 +773,7 @@ export class JobsService implements OnModuleInit {
             id: Date.now(),
             timestamp: this.formatTimestamp(),
             action: "Monitoring",
-            result: `Iteration ${iteration}: Analyzing market conditions...`,
+            result: `Analyzing market conditions for arbitrage opportunities...`,
             tx: null,
         };
 
@@ -783,7 +783,7 @@ export class JobsService implements OnModuleInit {
         // Check if we should use demo mode (for hackathon presentation)
         const isDemoMode = true; // Force enable demo mode for testing
 
-        this.logger.log(`DEBUG: iteration=${iteration}, isDemoMode=${isDemoMode}, looking for arbitrage opportunities...`);
+        this.logger.log(`Analyzing market conditions for arbitrage opportunities...`);
 
         // RANDOM ARBITRAGE OPPORTUNITY - Execute trade randomly (1-5 attempts)
         if (isDemoMode) {
@@ -791,11 +791,11 @@ export class JobsService implements OnModuleInit {
             const shouldFindTrade = Math.random() < 0.2;
 
             if (shouldFindTrade) {
-                this.logger.log(`Arbitrage opportunity found for iteration ${iteration}`);
+                this.logger.log(`Arbitrage opportunity detected!`);
                 await this.executeMockTrade(jobId, userWalletAddress, parameters, iteration);
                 return;
             } else {
-                this.logger.log(`No profitable opportunities found for iteration ${iteration}`);
+                this.logger.log(`No profitable opportunities found`);
             }
         }
 
