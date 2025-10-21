@@ -24,6 +24,15 @@ export class RelayerService {
 
     private readonly relayerUrl = process.env.RELAYER_URL || this.relayerEndpoints[0];
 
+    private extractSignatureFromSignedTransaction(base58SignedTx: string): string {
+        const txBuffer = bs58.decode(base58SignedTx);
+        if (txBuffer.length < 64) {
+            throw new Error('Signed transaction too short to contain a signature');
+        }
+        const signatureBytes = txBuffer.subarray(0, 64);
+        return bs58.encode(signatureBytes);
+    }
+
     async submitBundle(signedTxs: string[]): Promise<string> {
         const endpoints = process.env.RELAYER_URL ? [process.env.RELAYER_URL] : this.relayerEndpoints;
         let lastError: any;
@@ -55,11 +64,31 @@ export class RelayerService {
                 if (response.data.error) {
                     this.logger.error(`Relayer ${endpoint} returned error:`, response.data.error);
                     lastError = new Error(`Relayer error: ${response.data.error.message || response.data.error}`);
-                    continue; // Try next endpoint
+                    continue;
                 }
 
                 this.logger.log(`Bundle submitted successfully to ${endpoint}:`, response.data.result);
-                return response.data.result;
+
+                let derivedSignature: string | undefined;
+                try {
+                    derivedSignature = this.extractSignatureFromSignedTransaction(signedTxs[0]);
+                    this.logger.log(`Derived transaction signature from signedTx[0]: ${derivedSignature}`);
+
+                    const confirmed = await this.waitForConfirmation(derivedSignature);
+                    if (!confirmed) {
+                        this.logger.warn('Derived signature not confirmed within timeout; returning signature anyway');
+                    }
+                } catch (sigErr) {
+                    this.logger.warn(`Failed to derive/wait signature from signed transaction: ${sigErr.message}. Falling back to direct RPC submit.`);
+                    try {
+                        return await this.submitDirectToSolana(signedTxs);
+                    } catch (fallbackError) {
+                        this.logger.error('Fallback direct RPC submission failed after relayer success:', fallbackError.message);
+                        return response.data.result;
+                    }
+                }
+
+                return derivedSignature!;
             } catch (error) {
                 lastError = error;
                 this.logger.warn(`Failed to submit bundle to ${endpoint}:`, error.message);
