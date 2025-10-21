@@ -592,7 +592,7 @@ function AgentStatusPageContent() {
                     setSimulationCount(0);
                     setLogs([]);
 
-                    showSuccess('Agent started!', 'Demo simulation running...');
+                    showSuccess('Agent started!', 'simulation running...');
 
                     // Also try to restart the real agent (optional)
                     try {
