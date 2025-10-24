@@ -8,9 +8,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (isAuthenticating) {
-            console.log("🔐 Authenticating with backend...");
+            console.log("Authenticating with backend...");
         } else if (isAuthenticated) {
-            console.log("✅ Authenticated with backend");
+            console.log("Authenticated with backend");
         }
     }, [isAuthenticated, isAuthenticating]);
 

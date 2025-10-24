@@ -142,13 +142,11 @@ export class JobsService implements OnModuleInit {
                 throw new Error(`Insufficient executor balance: ${balanceCheck.balance} SOL (required: ${balanceCheck.required} SOL)`);
             }
 
-            // Emit initial processing update
             this.sseService.emitJobUpdate(job.id.toString(), userWalletAddress, {
                 status: 'PROCESSING',
                 message: 'ZK agent execution in progress'
             });
 
-            // Emit log update
             this.sseService.emitLogUpdate(job.id.toString(), userWalletAddress, [
                 {
                     id: 1,
@@ -173,15 +171,12 @@ export class JobsService implements OnModuleInit {
                 }
             ]);
 
-            // Enforce rate limiting before agent execution
             await this.solanaService.enforceRateLimit();
 
-            // Log prices from both DEXes before running ZK agent
             this.logger.log('Fetching prices from DEXes for arbitrage analysis...');
             try {
                 const prices = await this.priceLoggerService.logPricesBeforeArbitrage(parameters.profitThreshold);
 
-                // Emit price analysis update
                 this.sseService.emitLogUpdate(job.id.toString(), userWalletAddress, [
                     {
                         id: 3,
@@ -194,7 +189,6 @@ export class JobsService implements OnModuleInit {
             } catch (priceError) {
                 this.logger.warn('Failed to fetch prices, continuing with ZK agent:', priceError.message);
 
-                // Emit price analysis error
                 this.sseService.emitLogUpdate(job.id.toString(), userWalletAddress, [
                     {
                         id: 3,
@@ -210,9 +204,7 @@ export class JobsService implements OnModuleInit {
             const journal = await this.agentService.runAgentAndVerify(parameters);
             this.logger.log(`[Job ${jobId}] ZK proof generation completed. Journal size: ${journal.length} bytes`);
 
-            // Check if any opportunity was found
             if (journal.length === 0 || journal.length < 50) {
-                // No opportunity found
                 this.logger.log(`No arbitrage opportunity found for job #${jobId}`);
 
                 this.sseService.emitLogUpdate(job.id.toString(), userWalletAddress, [
@@ -255,26 +247,21 @@ export class JobsService implements OnModuleInit {
                 return;
             }
 
-            // Opportunity found - proceed with trade execution
             if (journal.length > 0) {
-                // Emit ZK proof generation update
                 this.sseService.emitJobUpdate(job.id.toString(), userWalletAddress, {
                     status: 'PROCESSING',
                     message: 'Arbitrage opportunity detected! Building transaction...'
                 });
 
-                // Add delay between transactions to prevent conflicts
                 await new Promise(resolve => setTimeout(resolve, 2000));
 
                 const signedTx = await this.solanaService.buildExecuteJobTx(jobId, journal);
                 const signedTipTx = await this.solanaService.createTipTx();
 
-                // Enforce rate limiting before relayer submission
                 await this.solanaService.enforceRateLimit();
 
                 const txSignature = await this.relayerService.submitBundle([signedTx, signedTipTx]);
 
-                // Update user stats (PnL and trades executed)
                 await this.updateUserStats(userWalletAddress, parameters.profitThreshold);
 
                 await this.prisma.job.update({
@@ -282,12 +269,10 @@ export class JobsService implements OnModuleInit {
                     data: { status: 'COMPLETED', result: txSignature },
                 })
 
-                // Get updated user stats
                 const updatedUser = await this.prisma.user.findUnique({
                     where: { walletAddress: userWalletAddress }
                 });
 
-                // Emit success update with stats
                 this.sseService.emitJobUpdate(job.id.toString(), userWalletAddress, {
                     status: 'COMPLETED',
                     result: txSignature,
@@ -296,7 +281,6 @@ export class JobsService implements OnModuleInit {
                     tradesExecuted: updatedUser?.tradesExecuted || 0
                 });
 
-                // Emit final log update
                 this.sseService.emitLogUpdate(job.id.toString(), userWalletAddress, [
                     {
                         id: 1,
@@ -335,14 +319,12 @@ export class JobsService implements OnModuleInit {
                     data: { status: 'COMPLETED', result: 'No profitable opportunity found.' },
                 });
 
-                // Emit no profit update
                 this.sseService.emitJobUpdate(job.id.toString(), userWalletAddress, {
                     status: 'COMPLETED',
                     result: 'No profitable opportunity found.',
                     message: 'No profitable arbitrage opportunities found'
                 });
 
-                // Emit no profit log update
                 this.sseService.emitLogUpdate(job.id.toString(), userWalletAddress, [
                     {
                         id: 1,
@@ -380,7 +362,6 @@ export class JobsService implements OnModuleInit {
         } catch (error) {
             this.logger.error(`Job #${jobId} failed:`, error);
 
-            // Handle different types of errors
             let errorMessage = 'Job failed';
             let finalStatus = 'FAILED';
 
@@ -393,7 +374,7 @@ export class JobsService implements OnModuleInit {
                 error.message?.includes('ENOTFOUND') ||
                 error.message?.includes('ECONNREFUSED')) {
                 errorMessage = 'Relayer service unavailable - transaction could not be submitted to any Jito endpoint';
-                finalStatus = 'COMPLETED'; // Mark as completed since ZK proof was generated successfully
+                finalStatus = 'COMPLETED';
             } else if (error.message?.includes('Failed to execute ZK agent')) {
                 errorMessage = 'ZK agent execution failed - check DEX API availability and rate limits';
                 finalStatus = 'FAILED';
@@ -401,7 +382,6 @@ export class JobsService implements OnModuleInit {
                 errorMessage = error.message || 'Unknown error occurred';
             }
 
-            // Retry logic for certain types of failures
             const maxRetries = 2;
             const shouldRetry = retryCount < maxRetries && (
                 error.message?.includes('Failed to execute ZK agent') ||
@@ -415,13 +395,11 @@ export class JobsService implements OnModuleInit {
             if (shouldRetry) {
                 this.logger.log(`Retrying job #${jobId} (attempt ${retryCount + 1}/${maxRetries + 1})`);
 
-                // Emit retry update
                 this.sseService.emitJobUpdate(job.id.toString(), userWalletAddress, {
                     status: 'PROCESSING',
                     message: `Retrying job (attempt ${retryCount + 1}/${maxRetries + 1})`
                 });
 
-                // Emit retry log update
                 this.sseService.emitLogUpdate(job.id.toString(), userWalletAddress, [
                     {
                         id: 4,
@@ -432,13 +410,11 @@ export class JobsService implements OnModuleInit {
                     }
                 ]);
 
-                // Wait before retry (exponential backoff with longer delays for rate limiting)
                 const baseDelay = error.message?.includes('Rate limited') || error.message?.includes('Network congested') ? 15000 : 5000;
-                const delay = Math.pow(2, retryCount) * baseDelay; // 15s/30s/60s for rate limits, 5s/10s/20s for others
+                const delay = Math.pow(2, retryCount) * baseDelay;
                 this.logger.log(`Waiting ${delay}ms before retry...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
 
-                // Retry the job
                 return this.processJob(jobId, userWalletAddress, parameters, retryCount + 1);
             }
 
@@ -447,14 +423,12 @@ export class JobsService implements OnModuleInit {
                 data: { status: finalStatus, result: errorMessage },
             });
 
-            // Emit error update
             this.sseService.emitJobUpdate(job.id.toString(), userWalletAddress, {
                 status: finalStatus,
                 result: errorMessage,
                 message: finalStatus === 'FAILED' ? 'Job failed' : 'ZK proof generated but all Jito relayer endpoints unavailable'
             });
 
-            // Emit error log update
             this.sseService.emitLogUpdate(job.id.toString(), userWalletAddress, [
                 {
                     id: 1,
@@ -488,13 +462,9 @@ export class JobsService implements OnModuleInit {
         }
     }
 
-    /**
-     * Start continuous agent monitoring loop
-     */
     async startContinuousAgent(jobId: number, userWalletAddress: string, parameters: { profitThreshold: number }): Promise<void> {
         const agentId = `${jobId}_${userWalletAddress}`;
 
-        // Check if agent is already running
         if (this.runningAgents.get(agentId)) {
             this.logger.warn(`Agent ${agentId} is already running`);
             return;
@@ -502,7 +472,6 @@ export class JobsService implements OnModuleInit {
 
         this.logger.log(`Starting continuous agent ${agentId}`);
 
-        // Create job record in database so it appears in dashboard
         let job = await this.prisma.job.findFirst({
             where: {
                 jobId: BigInt(jobId),
@@ -511,7 +480,6 @@ export class JobsService implements OnModuleInit {
         });
 
         if (!job) {
-            // Create new job if it doesn't exist
             job = await this.prisma.job.create({
                 data: {
                     jobId: BigInt(jobId),
@@ -528,7 +496,6 @@ export class JobsService implements OnModuleInit {
             });
             this.logger.log(`Created database record for continuous agent ${agentId}`);
         } else {
-            // Update existing job status to RUNNING and parameters
             job = await this.prisma.job.update({
                 where: { id: job.id },
                 data: {
@@ -541,13 +508,11 @@ export class JobsService implements OnModuleInit {
 
         this.runningAgents.set(agentId, true);
 
-        // Emit starting status
         this.sseService.emitJobUpdate(jobId.toString(), userWalletAddress, {
             status: 'RUNNING',
             message: 'Continuous agent started - monitoring for opportunities'
         });
 
-        // Start continuous loop
         const loopPromise = this.runContinuousLoop(jobId, userWalletAddress, parameters);
         this.agentLoops.set(agentId, loopPromise);
     }
@@ -568,7 +533,6 @@ export class JobsService implements OnModuleInit {
             } catch (error) {
                 this.logger.error(`Error in continuous agent ${agentId} iteration ${iteration}:`, error);
 
-                // Emit error but continue running
                 this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [{
                     id: Date.now(),
                     timestamp: this.formatTimestamp(),
@@ -578,7 +542,7 @@ export class JobsService implements OnModuleInit {
                 }]);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 5000)); // 5 seconds between iterations
+            await new Promise(resolve => setTimeout(resolve, 5000));
         }
 
         this.logger.log(`Continuous agent ${agentId} stopped`);
@@ -587,15 +551,12 @@ export class JobsService implements OnModuleInit {
     private async executeMockTrade(jobId: number, userWalletAddress: string, parameters: { profitThreshold: number }, iteration: number): Promise<void> {
         this.logger.log(`Executing profitable trade for job ${jobId}`);
 
-        // Generate random but realistic profit amounts
-        const baseProfit = Math.random() * 0.5 + 0.1; // 0.1% to 0.6% profit
+        const baseProfit = Math.random() * 0.5 + 0.1;
         const profitAmount = baseProfit * (parameters.profitThreshold / 100);
-        const tradeAmount = Math.random() * 10 + 1; // 1-11 SOL trade size
+        const tradeAmount = Math.random() * 10 + 1;
 
-        // Generate fake transaction signature
         const mockTxSignature = this.generateMockTxSignature();
 
-        // 1. Opportunity Found Log
         const opportunityLog = {
             id: Date.now(),
             timestamp: this.formatTimestamp(),
@@ -606,7 +567,6 @@ export class JobsService implements OnModuleInit {
         await this.storeExecutionLog(jobId, userWalletAddress, opportunityLog);
         this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [opportunityLog]);
 
-        // 2. ZK Proof Generation Start
         const zkStartLog = {
             id: Date.now() + 1,
             timestamp: this.formatTimestamp(),
@@ -617,7 +577,6 @@ export class JobsService implements OnModuleInit {
         await this.storeExecutionLog(jobId, userWalletAddress, zkStartLog);
         this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [zkStartLog]);
 
-        // 3. ZK Agent Execution
         const zkAgentLog = {
             id: Date.now() + 2,
             timestamp: this.formatTimestamp(),
@@ -628,7 +587,6 @@ export class JobsService implements OnModuleInit {
         await this.storeExecutionLog(jobId, userWalletAddress, zkAgentLog);
         this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [zkAgentLog]);
 
-        // 4. ZK Proof Verification
         const zkVerifyLog = {
             id: Date.now() + 3,
             timestamp: this.formatTimestamp(),
@@ -639,7 +597,6 @@ export class JobsService implements OnModuleInit {
         await this.storeExecutionLog(jobId, userWalletAddress, zkVerifyLog);
         this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [zkVerifyLog]);
 
-        // 5. ZK Proof Complete
         const zkCompleteLog = {
             id: Date.now() + 4,
             timestamp: this.formatTimestamp(),
@@ -650,7 +607,6 @@ export class JobsService implements OnModuleInit {
         await this.storeExecutionLog(jobId, userWalletAddress, zkCompleteLog);
         this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [zkCompleteLog]);
 
-        // 6. Trade Execution Start
         const tradeStartLog = {
             id: Date.now() + 5,
             timestamp: this.formatTimestamp(),
@@ -661,10 +617,8 @@ export class JobsService implements OnModuleInit {
         await this.storeExecutionLog(jobId, userWalletAddress, tradeStartLog);
         this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [tradeStartLog]);
 
-        // Simulate trade execution delay
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // 7. Trade Completed
         const tradeCompleteLog = {
             id: Date.now() + 6,
             timestamp: this.formatTimestamp(),
@@ -675,16 +629,13 @@ export class JobsService implements OnModuleInit {
         await this.storeExecutionLog(jobId, userWalletAddress, tradeCompleteLog);
         this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [tradeCompleteLog]);
 
-        // Calculate profit amount
         const profitUSD = tradeAmount * profitAmount * 180;
 
-        // Update user stats with mock profit
         await this.updateUserStatsWithMockProfit(userWalletAddress, profitUSD);
 
         const realProfitAmount = profitUSD * 0.1;
         await this.transferRealProfitToVault(userWalletAddress, realProfitAmount);
 
-        // Update job status
         const job = await this.prisma.job.findFirst({
             where: { jobId: jobId, userWalletAddress }
         });
@@ -699,7 +650,6 @@ export class JobsService implements OnModuleInit {
                 },
             });
 
-            // Emit job completion
             this.sseService.emitJobUpdate(job.id.toString(), userWalletAddress, {
                 status: 'COMPLETED',
                 result: mockTxSignature,
@@ -712,9 +662,6 @@ export class JobsService implements OnModuleInit {
         this.logger.log(`Mock trade completed for job ${jobId} with profit $${(tradeAmount * profitAmount * 180).toFixed(2)}`);
     }
 
-    /**
-     * Generate a realistic-looking mock transaction signature
-     */
     private generateMockTxSignature(): string {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         let result = '';
@@ -724,9 +671,7 @@ export class JobsService implements OnModuleInit {
         return result;
     }
 
-    /**
-     * Update user stats with mock profit for demo
-     */
+
     private async updateUserStatsWithMockProfit(userWalletAddress: string, profitAmount: number): Promise<void> {
         try {
             const user = await this.prisma.user.findUnique({
@@ -747,23 +692,18 @@ export class JobsService implements OnModuleInit {
         }
     }
 
-    /**
-     * Transfer real profit to user's vault (10% of calculated profit as SOL)
-     */
     private async transferRealProfitToVault(userWalletAddress: string, profitAmount: number): Promise<void> {
         try {
             this.logger.log(`Transferring real profit $${profitAmount.toFixed(2)} (as SOL) to user vault: ${userWalletAddress}`);
 
-            // Convert USD profit to SOL (assuming SOL = $180)
-            const solAmount = profitAmount / 180; // Convert USD to SOL
-            const lamports = Math.floor(solAmount * 1000000000); // Convert to lamports (9 decimals)
+            const solAmount = profitAmount / 180;
+            const lamports = Math.floor(solAmount * 1000000000);
 
-            if (lamports < 1000000) { // Minimum 0.001 SOL transfer
+            if (lamports < 1000000) {
                 this.logger.log(`Profit amount too small (${lamports} lamports), skipping real transfer`);
                 return;
             }
 
-            // Get user's vault information
             const user = await this.prisma.user.findUnique({
                 where: { walletAddress: userWalletAddress }
             });
@@ -773,7 +713,6 @@ export class JobsService implements OnModuleInit {
                 return;
             }
 
-            // Transfer real SOL to user's vault using Solana service
             const transferResult = await this.solanaService.transferSOLToVault(
                 userWalletAddress,
                 lamports
@@ -782,7 +721,6 @@ export class JobsService implements OnModuleInit {
             if (transferResult.success) {
                 this.logger.log(`✅ Real profit transfer successful: ${solAmount.toFixed(6)} SOL to ${userWalletAddress}`);
 
-                // Emit log about real money transfer with devnet explorer link
                 this.sseService.emitLogUpdate(userWalletAddress, userWalletAddress, [{
                     id: Date.now(),
                     timestamp: this.formatTimestamp(),
@@ -799,11 +737,7 @@ export class JobsService implements OnModuleInit {
         }
     }
 
-    /**
-     * Search for a single arbitrage opportunity
-     */
     private async searchForOpportunity(jobId: number, userWalletAddress: string, parameters: { profitThreshold: number }, iteration: number): Promise<void> {
-        // Store and emit monitoring log
         const monitoringLog = {
             id: Date.now(),
             timestamp: this.formatTimestamp(),
@@ -815,14 +749,11 @@ export class JobsService implements OnModuleInit {
         await this.storeExecutionLog(jobId, userWalletAddress, monitoringLog);
         this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [monitoringLog]);
 
-        // Check if we should use demo mode (for hackathon presentation)
-        const isDemoMode = true; // Force enable demo mode for testing
+        const isDemoMode = true;
 
         this.logger.log(`Analyzing market conditions for arbitrage opportunities...`);
 
-        // RANDOM ARBITRAGE OPPORTUNITY - Execute trade randomly (1-5 attempts)
         if (isDemoMode) {
-            // Random chance of finding a trade (20% chance per iteration)
             const shouldFindTrade = Math.random() < 0.2;
 
             if (shouldFindTrade) {
@@ -834,7 +765,6 @@ export class JobsService implements OnModuleInit {
             }
         }
 
-        // Check executor balance
         const balanceCheck = await this.solanaService.checkExecutorBalance();
         if (!balanceCheck.hasEnoughBalance) {
             this.logger.warn(`Insufficient executor balance: ${balanceCheck.balance} SOL`);
@@ -848,20 +778,17 @@ export class JobsService implements OnModuleInit {
             return;
         }
 
-        // Fetch prices
         try {
             await this.priceLoggerService.logPricesBeforeArbitrage(parameters.profitThreshold);
         } catch (error) {
             this.logger.error('Failed to fetch prices:', error);
         }
 
-        // Run ZK agent
         this.logger.log(`[Iteration ${iteration}] Starting ZK proof generation...`);
         const journal = await this.agentService.runAgentAndVerify(parameters);
         this.logger.log(`[Iteration ${iteration}] ZK proof generation completed. Journal size: ${journal.length} bytes`);
 
         if (journal.length > 0 && journal.length >= 50) {
-            // Opportunity found!
             this.logger.log(`Opportunity found in iteration ${iteration}! Executing trade...`);
 
             this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [{
@@ -872,7 +799,6 @@ export class JobsService implements OnModuleInit {
                 tx: null,
             }]);
 
-            // Execute trade
             const signedTx = await this.solanaService.buildExecuteJobTx(jobId, journal);
             const signedTipTx = await this.solanaService.createTipTx();
 
@@ -880,7 +806,6 @@ export class JobsService implements OnModuleInit {
 
             const txSignature = await this.relayerService.submitBundle([signedTx, signedTipTx]);
 
-            // Update user stats (PnL and trades executed)
             await this.updateUserStats(userWalletAddress, parameters.profitThreshold);
 
             this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [{
@@ -891,7 +816,6 @@ export class JobsService implements OnModuleInit {
                 tx: txSignature,
             }]);
 
-            // Emit updated stats
             const updatedUser = await this.prisma.user.findUnique({
                 where: { walletAddress: userWalletAddress }
             });
@@ -907,7 +831,6 @@ export class JobsService implements OnModuleInit {
 
             this.logger.log(`Trade executed successfully in iteration ${iteration}: ${txSignature}`);
         } else {
-            // No opportunity
             this.logger.log(`Emitting "No Opportunity" log for job ${jobId}, user ${userWalletAddress}`);
             this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [{
                 id: Date.now(),
@@ -919,9 +842,6 @@ export class JobsService implements OnModuleInit {
         }
     }
 
-    /**
-     * Pause/stop continuous agent
-     */
     async pauseAgent(jobId: number, userWalletAddress: string): Promise<void> {
         const agentId = `${jobId}_${userWalletAddress}`;
 
@@ -933,7 +853,6 @@ export class JobsService implements OnModuleInit {
         this.logger.log(`Pausing agent ${agentId}`);
         this.runningAgents.set(agentId, false);
 
-        // Wait for loop to finish
         const loopPromise = this.agentLoops.get(agentId);
         if (loopPromise) {
             await loopPromise;
@@ -942,7 +861,6 @@ export class JobsService implements OnModuleInit {
 
         this.runningAgents.delete(agentId);
 
-        // Update database status to PAUSED
         await this.prisma.job.updateMany({
             where: {
                 jobId: BigInt(jobId),
@@ -952,7 +870,6 @@ export class JobsService implements OnModuleInit {
         });
         this.logger.log(`Updated database record for agent ${agentId} to PAUSED`);
 
-        // Emit paused status
         this.sseService.emitJobUpdate(jobId.toString(), userWalletAddress, {
             status: 'PAUSED',
             message: 'Agent paused by user'
@@ -985,13 +902,11 @@ export class JobsService implements OnModuleInit {
                 return false;
             }
 
-            // Stop existing agent if running
             if (this.runningAgents.has(agentId)) {
                 this.runningAgents.set(agentId, false);
                 this.logger.log(`Stopping existing agent ${agentId}`);
             }
 
-            // Parse parameters
             let parameters = { profitThreshold: 0.5 };
             try {
                 if (job.parameters) {
@@ -1001,7 +916,6 @@ export class JobsService implements OnModuleInit {
                 this.logger.warn(`Failed to parse parameters for agent ${agentId}, using defaults`);
             }
 
-            // Update database status to RUNNING
             await this.prisma.job.updateMany({
                 where: {
                     jobId: BigInt(jobId),
@@ -1012,14 +926,12 @@ export class JobsService implements OnModuleInit {
                 }
             });
 
-            // Start the agent
             this.runningAgents.set(agentId, true);
             const loopPromise = this.runContinuousLoop(jobId, userWalletAddress, parameters);
             this.agentLoops.set(agentId, loopPromise);
 
             this.logger.log(`✅ Agent ${agentId} restarted successfully with parameters:`, parameters);
 
-            // Emit restart log
             this.sseService.emitLogUpdate(jobId.toString(), userWalletAddress, [{
                 id: Date.now(),
                 timestamp: this.formatTimestamp(),
@@ -1035,22 +947,14 @@ export class JobsService implements OnModuleInit {
         }
     }
 
-    /**
-     * Check if agent is running
-     */
     isAgentRunning(jobId: number, userWalletAddress: string): boolean {
         const agentId = `${jobId}_${userWalletAddress}`;
         return this.runningAgents.get(agentId) || false;
     }
 
-    /**
-     * Update user trading statistics (PnL and trades executed)
-     */
     private async updateUserStats(userWalletAddress: string, profitThreshold: number): Promise<void> {
         try {
-            // For now, calculate mock PnL based on profit threshold
-            // In production, this would read actual vault balance changes
-            const mockProfitAmount = 50 + (profitThreshold * 10); // Mock profit calculation
+            const mockProfitAmount = 50 + (profitThreshold * 10);
 
             await this.prisma.user.update({
                 where: { walletAddress: userWalletAddress },
@@ -1095,7 +999,6 @@ export class JobsService implements OnModuleInit {
             return [];
         }
 
-        // Fetch actual execution logs from database
         const executionLogs = await this.prisma.executionLog.findMany({
             where: {
                 jobId: BigInt(jobId),
@@ -1109,7 +1012,6 @@ export class JobsService implements OnModuleInit {
 
         this.logger.log(`Found ${executionLogs.length} execution logs for job ${jobId}`);
 
-        // Convert database logs to frontend format
         const logs = executionLogs.map((log, index) => ({
             id: log.id,
             timestamp: this.formatTimestamp(log.timestamp),
@@ -1118,7 +1020,6 @@ export class JobsService implements OnModuleInit {
             tx: log.tx,
         }));
 
-        // If no logs found, return basic job info
         if (logs.length === 0) {
             this.logger.log(`No execution logs found, returning basic job info`);
             return [
@@ -1145,7 +1046,6 @@ export class JobsService implements OnModuleInit {
     async deleteJob(jobId: number, userWalletAddress: string) {
         this.logger.log(`Deleting job #${jobId} for user ${userWalletAddress}...`);
 
-        // Find the job to ensure it belongs to the user
         const job = await this.prisma.job.findFirst({
             where: {
                 jobId: BigInt(jobId),
@@ -1159,7 +1059,6 @@ export class JobsService implements OnModuleInit {
             throw new Error('Job not found or does not belong to user');
         }
 
-        // Delete the job
         await this.prisma.job.delete({
             where: {
                 id: job.id

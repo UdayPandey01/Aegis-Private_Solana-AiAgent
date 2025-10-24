@@ -27,12 +27,7 @@ export class SolanaService {
     const privateKey = process.env.EXECUTOR_PRIVATE_KEY;
     const programId = process.env.AEGIS_PROGRAM_ID;
 
-    // Debug logging
-    this.logger.log(`Environment check:`);
-    this.logger.log(`- SOLANA_RPC_URL: ${rpcUrl}`);
-    this.logger.log(`- EXECUTOR_PRIVATE_KEY exists: ${!!privateKey}`);
-    this.logger.log(`- AEGIS_PROGRAM_ID exists: ${!!programId}`);
-    this.logger.log(`- All env keys: ${Object.keys(process.env).filter(k => k.includes('EXECUTOR') || k.includes('AEGIS') || k.includes('SOLANA')).join(', ')}`);
+    this.logger.log(`Environment check: Required variables present`);
 
     if (!privateKey || !programId) {
       this.logger.error('Missing required environment variables!');
@@ -58,7 +53,7 @@ export class SolanaService {
   async checkExecutorBalance(): Promise<{ hasEnoughBalance: boolean; balance: number; required: number }> {
     try {
       const balance = await this.provider.connection.getBalance(this.executorKeypair.publicKey);
-      const required = 0.01 * LAMPORTS_PER_SOL; // 0.01 SOL minimum for fees and tips
+      const required = 0.01 * LAMPORTS_PER_SOL; 
 
       this.logger.log(`Executor balance: ${balance / LAMPORTS_PER_SOL} SOL, Required: ${required / LAMPORTS_PER_SOL} SOL`);
 
@@ -96,21 +91,18 @@ export class SolanaService {
       this.program.programId
     );
 
-    // Check if job account already exists
     let jobExists = false;
     try {
       await this.program.account.job.fetch(jobPda);
       jobExists = true;
       this.logger.log(`Job account already exists for jobId ${jobId}`);
     } catch (error) {
-      // Job doesn't exist yet, we'll create it
       this.logger.log(`Job account doesn't exist yet for jobId ${jobId}, will create it`);
     }
 
     const latestBlockhash = await this.provider.connection.getLatestBlockhash();
     const tx = new anchor.web3.Transaction();
 
-    // Add create job instruction if job doesn't exist
     if (!jobExists) {
       const createJobIx = await this.program.methods
         .createJob(new anchor.BN(jobId))
@@ -125,7 +117,6 @@ export class SolanaService {
       this.logger.log(`Added createJob instruction for jobId ${jobId}`);
     }
 
-    // Add execute job instruction
     const executeJobIx = await this.program.methods
       .executeJob(result)
       .accounts({
@@ -140,18 +131,15 @@ export class SolanaService {
     tx.recentBlockhash = latestBlockhash.blockhash;
     tx.feePayer = this.executorKeypair.publicKey;
 
-    // Ensure transaction is properly formatted
     if (!tx.instructions || tx.instructions.length === 0) {
       throw new Error('Transaction has no instructions');
     }
 
     tx.sign(this.executorKeypair);
 
-    // Validate transaction before serialization
     try {
       const serialized = tx.serialize({ requireAllSignatures: true });
       this.logger.log(`Transaction serialized successfully, size: ${serialized.length} bytes, instructions: ${tx.instructions.length}`);
-      // Return base58 format for Jito compatibility
       return bs58.encode(serialized);
     } catch (error) {
       this.logger.error('Failed to serialize transaction:', error);
@@ -159,7 +147,6 @@ export class SolanaService {
     }
   }
 
-  // Keep old method name for backward compatibility, but call new implementation
   async buildExecuteJobTx(jobId: number, result: Buffer): Promise<string> {
     return this.buildCreateAndExecuteJobTx(jobId, result);
   }
@@ -177,18 +164,15 @@ export class SolanaService {
     tx.recentBlockhash = latestBlockhash.blockhash;
     tx.feePayer = this.executorKeypair.publicKey;
 
-    // Ensure tip transaction is properly formatted
     if (!tx.instructions || tx.instructions.length === 0) {
       throw new Error('Tip transaction has no instructions');
     }
 
     tx.sign(this.executorKeypair);
 
-    // Validate tip transaction before serialization
     try {
       const serialized = tx.serialize({ requireAllSignatures: true });
       this.logger.log(`Tip transaction serialized successfully, size: ${serialized.length} bytes`);
-      // Return base58 format for Jito compatibility
       return bs58.encode(serialized);
     } catch (error) {
       this.logger.error('Failed to serialize tip transaction:', error);
@@ -200,27 +184,23 @@ export class SolanaService {
     try {
       this.logger.log(`Transferring ${lamports} lamports (${lamports / 1000000000} SOL) to user vault: ${userWalletAddress}`);
 
-      // Check if executor has enough SOL
       const balance = await this.provider.connection.getBalance(this.executorKeypair.publicKey);
-      if (balance < lamports + 5000) { // Keep 5000 lamports for fees
+      if (balance < lamports + 5000) {
         this.logger.warn(`Insufficient SOL balance. Available: ${balance} lamports, Required: ${lamports + 5000} lamports`);
         return { success: false, error: 'Insufficient SOL balance for profit transfer' };
       }
 
-      // Get user's vault PDA
       const [vaultPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), new PublicKey(userWalletAddress).toBuffer()],
         this.program.programId
       );
 
-      // Create SOL transfer instruction
       const transferIx = SystemProgram.transfer({
         fromPubkey: this.executorKeypair.publicKey,
         toPubkey: vaultPda,
         lamports: lamports,
       });
 
-      // Build and sign transaction
       const latestBlockhash = await this.provider.connection.getLatestBlockhash();
       const tx = new anchor.web3.Transaction();
       tx.add(transferIx);
@@ -228,14 +208,13 @@ export class SolanaService {
       tx.feePayer = this.executorKeypair.publicKey;
       tx.sign(this.executorKeypair);
 
-      // Send transaction
       const signature = await this.provider.connection.sendTransaction(tx, [this.executorKeypair], {
         skipPreflight: false,
         maxRetries: 3,
         preflightCommitment: 'confirmed'
       });
 
-      this.logger.log(`✅ SOL profit transfer successful. Signature: ${signature}`);
+      this.logger.log(` SOL profit transfer successful. Signature: ${signature}`);
       this.logger.log(`View on explorer: https://explorer.solana.com/tx/${signature}?cluster=devnet`);
 
       return { success: true, signature };
@@ -246,32 +225,25 @@ export class SolanaService {
     }
   }
 
-  /**
-   * Transfer real USDC to user's vault as profit (legacy method)
-   */
   async transferUSDCToVault(userWalletAddress: string, usdcAmount: number): Promise<{ success: boolean; signature?: string; error?: string }> {
     try {
       this.logger.log(`Transferring ${usdcAmount} micro USDC to user vault: ${userWalletAddress}`);
 
-      // Get user's vault PDA
       const [vaultPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), new PublicKey(userWalletAddress).toBuffer()],
         this.program.programId
       );
 
-      // Get vault's USDC token account
       const [vaultUsdcAta] = PublicKey.findProgramAddressSync(
         [vaultPda.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDC_MINT.toBuffer()],
         ASSOCIATED_TOKEN_PROGRAM_ID
       );
 
-      // Get executor's USDC token account (funding source)
       const [executorUsdcAta] = PublicKey.findProgramAddressSync(
         [this.executorKeypair.publicKey.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), USDC_MINT.toBuffer()],
         ASSOCIATED_TOKEN_PROGRAM_ID
       );
 
-      // Check if executor has enough USDC
       try {
         const executorBalance = await this.provider.connection.getTokenAccountBalance(executorUsdcAta);
         const availableUSDC = executorBalance.value.amount;
@@ -285,14 +257,13 @@ export class SolanaService {
         return { success: false, error: 'Could not verify executor USDC balance' };
       }
 
-      // Create transfer instruction
       const transferIx = await this.program.methods
         .deposit(new anchor.BN(0), new anchor.BN(usdcAmount))
         .accounts({
           vault: vaultPda,
           owner: this.executorKeypair.publicKey,
-          userSolAccount: executorUsdcAta, // Using executor's USDC account as source
-          solVault: vaultUsdcAta, // Transfer to vault's USDC account
+          userSolAccount: executorUsdcAta,
+          solVault: vaultUsdcAta,
           userUsdcAccount: executorUsdcAta,
           usdcVault: vaultUsdcAta,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -301,7 +272,6 @@ export class SolanaService {
         } as any)
         .instruction();
 
-      // Build and sign transaction
       const latestBlockhash = await this.provider.connection.getLatestBlockhash();
       const tx = new anchor.web3.Transaction();
       tx.add(transferIx);
@@ -309,14 +279,13 @@ export class SolanaService {
       tx.feePayer = this.executorKeypair.publicKey;
       tx.sign(this.executorKeypair);
 
-      // Send transaction
       const signature = await this.provider.connection.sendTransaction(tx, [this.executorKeypair], {
         skipPreflight: false,
         maxRetries: 3,
         preflightCommitment: 'confirmed'
       });
 
-      this.logger.log(`✅ USDC profit transfer successful. Signature: ${signature}`);
+      this.logger.log(` USDC profit transfer successful. Signature: ${signature}`);
       this.logger.log(`View on explorer: https://explorer.solana.com/tx/${signature}?cluster=devnet`);
 
       return { success: true, signature };
